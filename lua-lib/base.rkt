@@ -5,7 +5,7 @@
                      syntax/parse)
          "private/env.rkt"
          "private/nil.rkt"
-         "private/print.rkt"
+         "private/string.rkt"
          "private/table.rkt")
 
 ;; kernel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -192,8 +192,8 @@
 
 (define (concat a b)
   (bytes-append
-   (lua:string a)
-   (lua:string b)))
+   (lua:tostring a)
+   (lua:tostring b)))
 
 
 ;; tables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

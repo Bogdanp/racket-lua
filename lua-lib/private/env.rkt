@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "print.rkt"
+(require "string.rkt"
          "table.rkt")
 
 (provide
@@ -8,9 +8,9 @@
  current-global-environment)
 
 (define (make-initial-environment)
-  (define global (make-table))
-  (begin0 global
-    (table-set! global #"print" lua:print)))
+  (make-table
+   `(#"print" . ,lua:print)
+   `(#"tostring" . ,lua:tostring)))
 
 (define current-global-environment
   (make-parameter (make-initial-environment)))

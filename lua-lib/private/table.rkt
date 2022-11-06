@@ -4,7 +4,11 @@
          "nil.rkt")
 
 (provide
- (all-defined-out))
+ table?
+ make-table
+ table-length
+ table-ref
+ table-set!)
 
 (struct table (ht [border #:mutable]) #:transparent)
 
@@ -19,8 +23,7 @@
          (loop arg)]
         [`(,k . ,v)
          (hash-set! ht k v)
-         (when (and (integer? k)
-                    (> k border))
+         (when (and (integer? k) (> k border))
            (set! border k))]
         [_
          (hash-set! ht index arg)
@@ -37,6 +40,5 @@
 
 (define (table-set! t k v)
   (hash-set! (table-ht t) k v)
-  (when (and (integer? k)
-             (> k (table-border t)))
+  (when (and (integer? k) (> k (table-border t)))
     (set-table-border! t k)))

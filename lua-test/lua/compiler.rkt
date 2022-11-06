@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require lua/private/env
+         lua/private/string
          racket/path
          racket/port
          racket/runtime-path
@@ -25,6 +26,7 @@
         (call-with-output-string
          (lambda (out)
            (parameterize ([current-global-environment (make-initial-environment)]
+                          [current-print-table-ids? #f]
                           [current-output-port out])
              (dynamic-require `(file ,(path->string path)) #f)))))
       (with-handlers ([exn:fail:filesystem?
