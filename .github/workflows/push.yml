@@ -1,0 +1,15 @@
+on: push
+name: CI
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: Bogdanp/setup-racket@v1.9
+      with:
+        architecture: 'x64'
+        distribution: 'full'
+        variant: 'CS'
+        version: '8.6'
+    - run: raco pkg install --auto --batch lua-lib/ lua-test/
+    - run: raco test lua-test/
