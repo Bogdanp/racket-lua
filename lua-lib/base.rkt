@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require racket/match)
+(require (for-syntax racket/base
+                     syntax/parse)
+         racket/match)
 
 ;; kernel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -8,6 +10,7 @@
  #%app
  #%datum
  #%top
+ #%subscript
  (rename-out
   [#%plain-module-begin #%module-begin]
   [begin #%begin]
@@ -20,12 +23,24 @@
   [let #%let]
   [let/ec #%let/ec]
   [provide #%provide]
-  [set! #%set!]
+  [lua-set! #%set!]
   [unless #%unless]
   [values #%values]
   [void #%void]
   [when #%when]))
 
+(define-syntax (lua-set! stx)
+  (syntax-parse stx
+    #:literals (#%subscript)
+    [(_ (#%subscript t:expr k:expr) v:expr)
+     #'(table-set! t k v)]
+    [(_ id:id e:expr)
+     #'(set! id e)]))
+
+(define-syntax (#%subscript stx)
+  (syntax-parse stx
+    [(_ t:expr k:expr)
+     #'(table-ref t k)]))
 
 ;; basics ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,3 +201,9 @@
 
 (define (table-ref t v)
   (hash-ref (table-ht t) v lua-nil))
+
+(define (table-set! t k v)
+  (hash-set! (table-ht t) k v)
+  (when (and (integer? k)
+             (> k (table-border t)))
+    (set-table-border! t k)))

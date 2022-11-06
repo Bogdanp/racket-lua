@@ -31,7 +31,7 @@
   [((Assignment ctxt vars '(#%rest)))
    (with-syntax ([((var idx) ...) (for/list ([idx (in-naturals 1)]
                                              [var (in-list vars)])
-                                    (list var idx))])
+                                    (list (compile-expr var) idx))])
      (syntax/loc ctxt
        (#%let
         ([#%t (#%table #%rest)])
@@ -40,7 +40,8 @@
   [((Assignment ctxt vars exprs))
    (with-syntax ([((var expr) ...) (for/list ([var (in-list vars)]
                                               [expr (in-list exprs)])
-                                     (list var (compile-expr expr)))])
+                                     (list (compile-expr var)
+                                           (compile-expr expr)))])
      (syntax/loc ctxt
        (#%begin (#%set! var expr) ...)))]
 
@@ -159,11 +160,19 @@
   [((? number?))  (datum->syntax #f e)]
   [((? bytes?))   (datum->syntax #f e)]
   [((? symbol?))  (datum->syntax #f e)]
+
   [((Call ctxt e args))
    (with-syntax ([rator (compile-expr e)]
                  [(rand ...) (map compile-expr args)])
      (syntax/loc ctxt
        (rator rand ...)))]
+
+  [((Subscript ctxt expr field-expr))
+   (with-syntax ([expr (compile-expr expr)]
+                 [field-expr (compile-expr field-expr)])
+     (syntax/loc ctxt
+       (#%subscript expr field-expr)))]
+
   [((Table ctxt fields))
    (with-syntax ([(field ...) (map compile-field fields)])
      (syntax/loc ctxt

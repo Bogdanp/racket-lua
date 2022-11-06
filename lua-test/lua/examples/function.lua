@@ -22,8 +22,8 @@ variadic(1, 2)
 function variadic_add(...)
     local args = {...}
     accum = 0
-    for i = 0, #args do
-        accum = accum + i
+    for i = 1, #args do
+        accum = accum + args[i]
     end
     return accum
 end
