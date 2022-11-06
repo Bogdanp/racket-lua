@@ -165,6 +165,18 @@
      (syntax/loc ctxt
        (rator rand ...)))]
 
+  [((Func ctxt (list params ... '...) block))
+   (with-syntax ([(param ...) params]
+                 [block (compile-block block)])
+     (syntax/loc ctxt
+       (#%lambda ([param nil] ... . #%rest) (#%let/ec #%return block))))]
+
+  [((Func ctxt params block))
+   (with-syntax ([(param ...) params]
+                 [block (compile-block block)])
+     (syntax/loc ctxt
+       (#%lambda ([param nil] ...) (#%let/ec #%return block))))]
+
   [((Subscript ctxt expr field-expr))
    (with-syntax ([expr (compile-expr expr)]
                  [field-expr (compile-expr field-expr)])

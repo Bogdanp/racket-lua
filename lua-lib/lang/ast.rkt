@@ -22,17 +22,12 @@
          (format-id fld-stx "~a-~a" id-stx fld-stx)))
      #'(begin
          (struct Id Node (fld ...) #:transparent) ...
-         (provide (struct-out Id) ...)
-
-         (provide ->sexp)
+         (provide ->sexp (struct-out Id) ...)
          (define (->sexp n)
            (cond
-             [(Id? n)
-              `(Id ,(->sexp (Id-fld n)) ...)] ...
-             [(list? n)
-              (map ->sexp n)]
-             [else
-              n])))]))
+             [(Id? n) `(Id ,(->sexp (Id-fld n)) ...)] ...
+             [(list? n) (map ->sexp n)]
+             [else n])))]))
 
 (define-node-types
   [Assignment (vars exprs)]

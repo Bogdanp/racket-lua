@@ -145,10 +145,20 @@
      (parse-for-block l)]
     [(keyword 'local)
      (define ctxt (token-ctxt (expect l 'keyword 'local)))
-     (define names (parse-names l))
-     (skip l 'op '=)
-     (define exprs (parse-exprs l))
-     (LocalAssignment ctxt names exprs)]
+     (match (lexer-peek l)
+       [(keyword 'function)
+        (skip l 'keyword 'function)
+        (define name (parse-name l))
+        (define params (parse-params l))
+        (define block (parse-block l))
+        (define func (Func ctxt params block))
+        (begin0 (LocalAssignment ctxt (list name) (list func))
+          (expect l 'keyword 'end))]
+       [_
+        (define names (parse-names l))
+        (skip l 'op '=)
+        (define exprs (parse-exprs l))
+        (LocalAssignment ctxt names exprs)])]
     [tok
      (expected "statement" tok)]))
 

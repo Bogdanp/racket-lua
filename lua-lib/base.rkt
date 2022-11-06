@@ -23,6 +23,7 @@
   [define #%define]
   [else #%else]
   [error #%error]
+  [lambda #%lambda]
   [let #%let]
   [let/ec #%let/ec]
   [provide #%provide]
@@ -72,8 +73,6 @@
 (provide
  (rename-out
   [current-global-environment #%global]))
-
-
 
 
 ;; arithmetic operators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
