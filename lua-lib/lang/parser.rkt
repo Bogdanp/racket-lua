@@ -77,27 +77,20 @@
     (skip l 'eof)))
 
 (define (parse-block l [enders '(end)])
-  (define tok
-    (lexer-peek l))
+  (define ctxt
+    (token-ctxt (lexer-peek l)))
   (let loop ([stmts null])
     (match (lexer-peek l)
       [(eof)
-       (Block
-        (token-ctxt tok)
-        (reverse stmts))]
+       (Block ctxt (reverse stmts))]
       [(keyword id)
        #:when (member id enders)
-       (Block
-        (token-ctxt tok)
-        (reverse stmts))]
+       (Block ctxt (reverse stmts))]
       [(keyword 'return)
-       (skip l 'keyword 'return)
-       (define exprs (parse-exprs l))
+       (define return-ctxt (token-ctxt (expect l 'keyword 'return)))
+       (define return (Return return-ctxt (parse-exprs l)))
        (maybe-skip l 'semicolon)
-       (BlockWithReturn
-        (token-ctxt tok)
-        (reverse stmts)
-        exprs)]
+       (Block ctxt (reverse (cons return stmts)))]
       [(semicolon)
        (skip l 'semicolon)
        (loop stmts)]

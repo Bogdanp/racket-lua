@@ -147,7 +147,7 @@ print(function()
 end)
 EOF
       (Block
-       ((Call print ((Func () (BlockWithReturn () (42))))))))
+       ((Call print ((Func () (Block ((Return (42))))))))))
 
      (check-parse
       #<<EOF
@@ -157,7 +157,7 @@ end)(42)
 EOF
       (Block
        ((Call
-         (Func (x) (BlockWithReturn () ((Call + (x x)))))
+         (Func (x) (Block ((Return ((Call + (x x)))))))
          (42)))))
 
      (check-parse
@@ -168,7 +168,7 @@ end)(42)
 EOF
       (Block
        ((Call
-         (Func (x) (BlockWithReturn () ((Call + (x x)) 42)))
+         (Func (x) (Block ((Return ((Call + (x x)) 42)))))
          (42))))))
 
     (test-suite

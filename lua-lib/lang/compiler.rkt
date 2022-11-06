@@ -18,13 +18,7 @@
   [((Block ctxt stmts))
    (with-syntax ([(statement ...) (map compile-statement (Lua->L1 stmts))])
      (syntax/loc ctxt
-       (#%begin statement ... (#%void))))]
-
-  [((BlockWithReturn ctxt stmts return-exprs))
-   (with-syntax ([(statement ...) (map compile-statement (Lua->L1 stmts))]
-                 [(return-expr ...) (map compile-expr return-exprs)])
-     (syntax/loc ctxt
-       (#%begin statement ... (#%return (#%values return-expr ...)))))])
+       (#%begin statement ... (#%void))))])
 
 (define/match (compile-statement _)
   [((Assignment ctxt vars '(#%rest)))
@@ -146,6 +140,11 @@
                  [block (compile-block block)])
      (syntax/loc ctxt
        (#%let/ec #%break (#%let #%repeat () block (#%unless cond-expr (#%repeat))))))]
+
+  [((Return ctxt exprs))
+   (with-syntax ([(expr ...) (map compile-expr exprs)])
+     (syntax/loc ctxt
+       (#%return expr ...)))]
 
   [((While ctxt cond-expr block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
