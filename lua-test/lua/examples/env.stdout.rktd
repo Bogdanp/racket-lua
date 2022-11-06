@@ -1,0 +1,1 @@
+"nil\ntable: 0x940e\n1\n123\nmy_print:1\n"

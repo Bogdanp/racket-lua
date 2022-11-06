@@ -8,11 +8,10 @@
  compile-chunk)
 
 (define (compile-chunk chunk)
-  (with-syntax ([(global ...) (collect-globals chunk)]
-                [block (compile-block chunk)])
+  (with-syntax ([block (compile-block chunk)])
     #'((#%provide #%chunk)
-       (#%define global nil) ...
-       (#%define (#%chunk-proc) (#%let/ec #%return block))
+       (#%define _ENV (#%global))
+       (#%define (#%chunk-proc . #%rest) (#%let/ec #%return block))
        (#%define #%chunk (#%chunk-proc)))))
 
 (define/match (compile-block _)
@@ -220,30 +219,3 @@
 
 (define (format-label-id name-id)
   (format-id #f "#%label:~a" name-id))
-
-(define (collect-globals node)
-  (define globals
-    (make-hasheq))
-  (let loop ([node node])
-    (match node
-      [(Block _ stmts)
-       (for-each loop stmts)]
-      [(BlockWithReturn _ stmts _return-exprs)
-       (for-each loop stmts)]
-      [(Assignment _ vars _)
-       (for ([var (in-list vars)])
-         (match var
-           [(? symbol?)
-            (hash-set! globals var #t)]
-           [_
-            (void)]))]
-      [(Func _ _ block)
-       (loop block)]
-      [(FuncDef _ _ _ block)
-       (loop block)]
-      [(If _ _ then-block else-block)
-       (loop then-block)
-       (loop else-block)]
-      [_
-       (void)]))
-  (hash-keys globals))

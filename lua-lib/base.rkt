@@ -1,15 +1,18 @@
 #lang racket/base
 
 (require (for-syntax racket/base
+                     racket/syntax
                      syntax/parse)
-         racket/match)
+         "private/env.rkt"
+         "private/nil.rkt"
+         "private/print.rkt"
+         "private/table.rkt")
 
 ;; kernel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
  #%app
  #%datum
- #%top
  #%subscript
  (rename-out
   [#%plain-module-begin #%module-begin]
@@ -24,39 +27,53 @@
   [let/ec #%let/ec]
   [provide #%provide]
   [lua-set! #%set!]
+  [lua-top #%top]
   [unless #%unless]
   [values #%values]
   [void #%void]
   [when #%when]))
 
+(begin-for-syntax
+  (define (id-stx->bytes-stx stx)
+    (datum->syntax stx (string->bytes/utf-8 (symbol->string (syntax->datum stx))))))
+
+(define-syntax (lua-top stx)
+  (syntax-parse stx
+    [(_ . id:id)
+     #:with name (id-stx->bytes-stx #'id)
+     #:with env (format-id #'id "_ENV")
+     #'(#%subscript env name)]))
+
 (define-syntax (lua-set! stx)
   (syntax-parse stx
     #:literals (#%subscript)
+    [(_ (#%subscript t:expr k:id) v:expr)
+     #:with name (id-stx->bytes-stx #'k)
+     #'(table-set! t name v)]
     [(_ (#%subscript t:expr k:expr) v:expr)
      #'(table-set! t k v)]
     [(_ id:id e:expr)
-     #'(set! id e)]))
+     #:when (identifier-binding #'id)
+     #'(set! id e)]
+    [(_ id:id e:expr)
+     #:with name (id-stx->bytes-stx #'id)
+     #:with env (format-id #'id "_ENV")
+     #'(table-set! env name e)]))
 
 (define-syntax (#%subscript stx)
   (syntax-parse stx
     [(_ t:expr k:expr)
      #'(table-ref t k)]))
 
-;; basics ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; global environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; https://www.lua.org/manual/5.4/manual.html#2.2
 
 (provide
  (rename-out
-  [lua-nil nil]
-  [lua-print print]))
+  [current-global-environment #%global]))
 
-(define lua-nil (gensym 'nil))
 
-(define (lua-print v)
-  (cond
-    [(eq? v lua-nil)
-     (displayln "nil")]
-    [else
-     (displayln v)]))
 
 
 ;; arithmetic operators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -166,44 +183,22 @@
      (raise-argument-error "#" "a string or a table" v)]))
 
 
+;; basics ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ nil
+ (rename-out
+  [concat ..]))
+
+(define (concat a b)
+  (bytes-append
+   (lua:string a)
+   (lua:string b)))
+
+
 ;; tables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
  (rename-out
   [make-table #%table]
   [table-ref #%table-ref]))
-
-(struct table (ht [border #:mutable]) #:transparent)
-
-(define (make-table . args)
-  (define ht (make-hash))
-  (define index 1)
-  (define border 0)
-  (let loop ([args args])
-    (for ([arg (in-list args)])
-      (match arg
-        [(? list?)
-         (loop arg)]
-        [`(,k . ,v)
-         (hash-set! ht k v)
-         (when (and (integer? k)
-                    (> k border))
-           (set! border k))]
-        [_
-         (hash-set! ht index arg)
-         (when (> index border)
-           (set! border index))
-         (set! index (add1 index))])))
-  (table ht border))
-
-(define (table-length t)
-  (table-border t))
-
-(define (table-ref t v)
-  (hash-ref (table-ht t) v lua-nil))
-
-(define (table-set! t k v)
-  (hash-set! (table-ht t) k v)
-  (when (and (integer? k)
-             (> k (table-border t)))
-    (set-table-border! t k)))

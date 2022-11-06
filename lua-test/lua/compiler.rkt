@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/path
+(require lua/private/env
+         racket/path
          racket/port
          racket/runtime-path
          rackunit)
@@ -23,7 +24,8 @@
       (define stdout
         (call-with-output-string
          (lambda (out)
-           (parameterize ([current-output-port out])
+           (parameterize ([current-global-environment (make-initial-environment)]
+                          [current-output-port out])
              (dynamic-require `(file ,(path->string path)) #f)))))
       (with-handlers ([exn:fail:filesystem?
                        (λ (_)
