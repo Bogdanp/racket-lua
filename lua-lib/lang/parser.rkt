@@ -209,7 +209,7 @@
 (define (parse-assignment-or-call l)
   (let step ([vars null]
              [exps null])
-    (match (parse-primaryexp l)
+    (match (parse-primaryexpr l)
       [(? Call? e) e]
       [(? CallMethod? e) e]
       [e (match (lexer-peek l)
@@ -225,25 +225,25 @@
            [tok
             (expected "assignment" tok)])])))
 
-(define (parse-primaryexp l [e (parse-prefixexp l)])
+(define (parse-primaryexpr l [e (parse-prefixexp l)])
   (define tok
     (lexer-peek l))
   (match tok
     [(dot)
      (skip l 'dot)
-     (parse-primaryexp l (Attribute (token-ctxt tok) e (parse-name l)))]
+     (parse-primaryexpr l (Attribute (token-ctxt tok) e (parse-name l)))]
     [(lsqbrace)
      (skip l 'lsqbrace)
      (define sub-e (parse-expr l))
      (skip l 'rsqbrace)
-     (parse-primaryexp l (Subscript (token-ctxt tok) e sub-e))]
+     (parse-primaryexpr l (Subscript (token-ctxt tok) e sub-e))]
     [(lparen)
-     (parse-primaryexp l (Call (token-ctxt tok) e (parse-args l)))]
+     (parse-primaryexpr l (Call (token-ctxt tok) e (parse-args l)))]
     [(colon)
      (skip l 'colon)
      (define name (parse-name l))
      (define args (parse-args l))
-     (parse-primaryexp l (CallMethod (token-ctxt tok) e name args))]
+     (parse-primaryexpr l (CallMethod (token-ctxt tok) e name args))]
     [_ e]))
 
 (define (parse-prefixexp l)
@@ -301,7 +301,7 @@
      (begin0 s
        (skip l 'string))]
     [(name _)
-     (parse-primaryexp l)]
+     (parse-primaryexpr l)]
     [(and (dotdotdot) tok)
      (define ctxt (token-ctxt tok))
      (begin0 (Call ctxt '#%va-args null)
@@ -400,39 +400,44 @@
 
 (define (parse-fields l)
   (reverse
-   (let loop ([fieldlist null])
+   (let loop ([fields null])
      (define field
        (parse-field l))
      (match (lexer-peek l)
        [(comma)
         (skip l 'comma)
-        (loop (cons field fieldlist))]
+        (loop (cons field fields))]
        [(semicolon)
         (skip l 'semicolon)
-        (loop (cons field fieldlist))]
+        (loop (cons field fields))]
        [_
-        (cons field fieldlist)]))))
+        (cons field fields)]))))
 
 (define (parse-field l)
   (match (lexer-peek l)
     [(lsqbrace)
-     (define loc (token-ctxt (expect l 'lsqbrace)))
-     (define exp (parse-expr l))
+     (define ctxt (token-ctxt (expect l 'lsqbrace)))
+     (define field-expr (parse-expr l))
      (skip l 'rsqbrace)
      (skip l 'op '=)
-     (define val (parse-expr l))
-     (FieldExpr loc exp val)]
-    [(name name)
-     (define loc (token-ctxt (expect l 'name)))
-     (skip l 'op '=)
-     (define expr (parse-expr l))
-     (FieldLit loc name expr)]
+     (define value-expr (parse-expr l))
+     (FieldExpr ctxt field-expr value-expr)]
+    [(and (name _) tok)
+     (define ctxt (token-ctxt tok))
+     (define name-or-expr (parse-primaryexpr l))
+     (match (lexer-peek l)
+       [(op '=)
+        #:when (symbol? name-or-expr)
+        (define name name-or-expr)
+        (skip l 'op '=)
+        (define expr (parse-expr l))
+        (FieldLit ctxt name expr)]
+       [_
+        (Field ctxt name-or-expr)])]
     [tok
      (Field
       (token-ctxt tok)
-      (parse-expr l))]
-    [tok
-     (expected "field" tok)]))
+      (parse-expr l))]))
 
 (define (parse-name l)
   (token-val (expect l 'name)))
