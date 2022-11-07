@@ -20,6 +20,8 @@
 (define (lua:tostring v . _)
   (string->bytes/utf-8
    (cond
+     [(eq? v #t) "true"]
+     [(eq? v #f) "false"]
      [(eq? v nil) "nil"]
      [(procedure? v) (->string "function" v)]
      [(table? v) (->string "table" v)]
