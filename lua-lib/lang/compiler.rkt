@@ -113,13 +113,13 @@
        (name name)))]
 
   [((If ctxt cond-expr then-block #f))
-   (with-syntax ([cond-expr (compile-expr cond-expr)]
+   (with-syntax ([cond-expr (compile-expr* cond-expr)]
                  [then-block (compile-block then-block)])
      (syntax/loc ctxt
        (#%when cond-expr then-block)))]
 
   [((If ctxt cond-expr then-block (? If? elseif-block)))
-   (with-syntax ([cond-expr (compile-expr cond-expr)]
+   (with-syntax ([cond-expr (compile-expr* cond-expr)]
                  [then-block (compile-block then-block)]
                  [else-block (compile-statement elseif-block)])
      (syntax/loc ctxt
@@ -128,7 +128,7 @@
         [#%else else-block nil])))]
 
   [((If ctxt cond-expr then-block else-block))
-   (with-syntax ([cond-expr (compile-expr cond-expr)]
+   (with-syntax ([cond-expr (compile-expr* cond-expr)]
                  [then-block (compile-block then-block)]
                  [else-block (compile-block else-block)])
      (syntax/loc ctxt

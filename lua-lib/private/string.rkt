@@ -17,7 +17,7 @@
       (format "<~a: 0x~a>" what (number->string (eq-hash-code v) 16))
       (format "<~a>" what)))
 
-(define (lua:tostring v)
+(define (lua:tostring v . _)
   (string->bytes/utf-8
    (cond
      [(eq? v nil) "nil"]

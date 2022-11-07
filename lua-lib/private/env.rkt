@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "string.rkt"
+(require "error.rkt"
+         "string.rkt"
          "table.rkt")
 
 (provide
@@ -9,6 +10,8 @@
 
 (define (make-initial-environment)
   (make-table
+   `(#"error" . ,lua:error)
+   `(#"pcall" . ,lua:pcall)
    `(#"print" . ,lua:print)
    `(#"tostring" . ,lua:tostring)))
 
