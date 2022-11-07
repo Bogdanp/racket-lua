@@ -28,7 +28,8 @@
            (parameterize ([current-global-environment (make-initial-environment)]
                           [current-print-ids? #f]
                           [current-output-port out])
-             (dynamic-require `(file ,(path->string path)) #f)))))
+             (with-handlers ([exn:fail? (λ (e) (fail-check (format "~a: ~a" path (exn-message e))))])
+               (dynamic-require `(file ,(path->string path)) #f))))))
       (with-handlers ([exn:fail:filesystem?
                        (λ (_)
                          (call-with-output-file stdout-path

@@ -154,8 +154,7 @@
         (define name (parse-name l))
         (define params (parse-params l))
         (define block (parse-block l))
-        (define func (Func ctxt params block))
-        (begin0 (LocalAssignment ctxt (list name) (list func))
+        (begin0 (LocalFunction ctxt name params block)
           (expect l 'keyword 'end))]
        [_
         (define names (parse-names l))

@@ -25,31 +25,58 @@
 
 (define/match (compile-statement e)
   [((Assignment ctxt vars (list exprs ... (vararg vararg-expr))))
-   (with-syntax ([((var expr) ...)
-                  (for/list ([var (in-list vars)]
+   (with-syntax ([((attr-temp attr-exp) ...)
+                  (vars->attr-temp&exprs vars)]
+                 [((sub-lhs-temp sub-lhs-expr sub-rhs-temp sub-rhs-expr) ...)
+                  (vars->sub-temp&exprs vars)]
+                 [((temp var expr) ...)
+                  (for/list ([idx (in-naturals)]
+                             [var (in-list vars)]
                              [expr (in-list exprs)])
-                    (list (compile-expr var)
+                    (list (format-id #f "#%temp~a" idx)
+                          (compile-assignment-var var idx)
                           (compile-expr* expr)))]
                  [vararg-expr (compile-expr vararg-expr)]
-                 [((va-var va-idx) ...)
+                 [((va-temp va-var va-idx) ...)
                   (let ([start (min (length vars) (length exprs))])
-                    (for/list ([idx (in-naturals (add1 start))]
+                    (for/list ([idx (in-naturals start)]
                                [var (in-list (drop vars start))])
-                      (list (compile-expr var) idx)))])
+                      (list (format-id #f "#%temp~a" idx)
+                            (compile-assignment-var var idx)
+                            (add1 idx))))])
      (syntax/loc ctxt
-       (#%begin
-        (#%set! var expr) ...
+       (#%let
+        ([attr-temp attr-exp] ...
+         [sub-lhs-temp sub-lhs-expr] ...
+         [sub-rhs-temp sub-rhs-expr] ...
+         [temp expr] ...
+         [#%t (#%apply #%table (#%adjust-va vararg-expr))])
         (#%let
-         ([#%t (#%apply #%table (#%adjust-va vararg-expr))])
-         (#%set! va-var (#%table-ref #%t va-idx)) ...))))]
+         ([va-temp (#%table-ref #%t va-idx)] ...)
+         (#%set! var temp) ...
+         (#%set! va-var va-temp) ...))))]
 
   [((Assignment ctxt vars exprs))
-   (with-syntax ([((var expr) ...) (for/list ([var (in-list vars)]
-                                              [expr (in-list exprs)])
-                                     (list (compile-expr var)
-                                           (compile-expr* expr)))])
-     (syntax/loc ctxt
-       (#%begin (#%set! var expr) ...)))]
+   (let ([exprs (indexed exprs)])
+     (with-syntax ([((attr-temp attr-expr) ...)
+                    (vars->attr-temp&exprs vars)]
+                   [((sub-lhs-temp sub-lhs-expr sub-rhs-temp sub-rhs-expr) ...)
+                    (vars->sub-temp&exprs vars)]
+                   [((temp var expr) ...)
+                    (for/list ([idx (in-naturals)]
+                               [var (in-list vars)])
+                      (define temp (format-id #f "#%temp~a" idx))
+                      (define expr (hash-ref exprs idx 'nil))
+                      (list temp
+                            (compile-assignment-var var idx)
+                            (compile-expr* expr)))])
+       (syntax/loc ctxt
+         (#%let
+          ([attr-temp attr-expr] ...
+           [sub-lhs-temp sub-lhs-expr] ...
+           [sub-rhs-temp sub-rhs-expr] ...
+           [temp expr] ...)
+          (#%set! var temp) ...))))]
 
   [((Break ctxt))
    (syntax/loc ctxt
@@ -138,11 +165,46 @@
      (syntax/loc ctxt
        (#%define name (#%call/cc #%values))))]
 
-  [((Let ctxt names stmts))
-   (with-syntax ([(name ...) names]
+  [((Let ctxt vars (list exprs ... (vararg vararg-expr)) stmts))
+   (with-syntax ([((temp var expr) ...)
+                  (for/list ([idx (in-naturals)]
+                             [var (in-list vars)]
+                             [expr (in-list exprs)])
+                    (define temp (format-id #f "#%temp~a" idx))
+                    (list temp var (compile-expr* expr)))]
+                 [vararg-expr (compile-expr vararg-expr)]
+                 [((va-var va-temp va-idx) ...)
+                  (let ([start (min (length vars) (length exprs))])
+                    (for/list ([idx (in-naturals start)]
+                               [var (in-list (drop vars start))])
+                      (define temp (format-id #f "#%temp~a" idx))
+                      (list var temp (add1 idx))))]
                  [(stmt ...) (map compile-statement stmts)])
      (syntax/loc ctxt
-       (#%let ([name nil] ...) stmt ...)))]
+       (#%let
+        ([temp expr] ...
+         [#%t (#%apply #%table (#%adjust-va vararg-expr))])
+        (#%let
+         ([va-temp (#%table-ref #%t va-idx)] ...)
+         (#%let
+          ([var temp] ... [va-var va-temp] ...)
+          stmt ...)))))]
+
+  [((Let ctxt vars exprs stmts))
+   (let ([exprs (indexed exprs)])
+     (with-syntax ([((temp var expr) ...)
+                    (for/list ([idx (in-naturals)]
+                               [var (in-list vars)])
+                      (define temp (format-id #f "#%temp~a" idx))
+                      (define expr (hash-ref exprs idx 'nil))
+                      (list temp var (compile-expr* expr)))]
+                   [(stmt ...) (map compile-statement stmts)])
+       (syntax/loc ctxt
+         (#%let
+          ([temp expr] ...)
+          (#%let
+           ([var temp] ...)
+           stmt ...)))))]
 
   [((MethodDef ctxt names attr params block))
    (compile-statement
@@ -218,8 +280,8 @@
        (#%lambda ([param nil] ...) (#%let/ec #%return block))))]
 
   [((Subscript ctxt expr field-expr))
-   (with-syntax ([expr (compile-expr expr)]
-                 [field-expr (compile-expr field-expr)])
+   (with-syntax ([expr (compile-expr* expr)]
+                 [field-expr (compile-expr* field-expr)])
      (syntax/loc ctxt
        (#%subscript expr field-expr)))]
 
@@ -283,7 +345,7 @@
 ;; passes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Lua: The standard lua language.
-;; L1: Removes LocalAssignment, adds Let
+;; L1: Removes Local{Assignment, Function}, adds Let
 
 (define (Lua->L1 stmts)
   (let loop ([res null]
@@ -292,8 +354,11 @@
       [(list)
        (reverse res)]
       [(cons (LocalAssignment ctxt names exprs) stmts)
-       (define assignment (Assignment ctxt names exprs))
-       (define node (Let ctxt names (cons assignment (Lua->L1 stmts))))
+       (define node (Let ctxt names exprs (Lua->L1 stmts)))
+       (reverse (cons node res))]
+      [(cons (LocalFunction ctxt name params block) stmts)
+       (define func (Func ctxt params block))
+       (define node (Let ctxt (list name) (list func) (Lua->L1 stmts)))
        (reverse (cons node res))]
       [(cons stmt stmts)
        (loop (cons stmt res) stmts)])))
@@ -301,16 +366,16 @@
 
 ;; help ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (format-label-id name-id)
-  (format-id #f "#%label:~a" name-id))
-
-(define symbol->bytes
-  (compose1 string->bytes/utf-8 symbol->string))
-
 (define-match-expander vararg
   (lambda (stx)
     (syntax-parse stx
       [(_ e) #'(and (or (? Call?) '#%rest) e)])))
+
+(define symbol->bytes
+  (compose1 string->bytes/utf-8 symbol->string))
+
+(define (format-label-id name-id)
+  (format-id #f "#%label:~a" name-id))
 
 (define (names->subscripts ctxt names)
   (let loop ([target (car names)]
@@ -320,3 +385,40 @@
       [else
        (define sub (Subscript ctxt target (symbol->bytes (car names))))
        (loop sub (cdr names))])))
+
+(define (indexed lst)
+  (for/hasheqv ([idx (in-naturals)]
+                [val (in-list lst)])
+    (values idx val)))
+
+(define (vars->attr-temp&exprs vars)
+  (for/list ([idx (in-naturals)]
+             [var (in-list vars)]
+             #:when (Attribute? var))
+    (list (format-id #f "#%attr-temp~a" idx)
+          (compile-expr* (Attribute-e var)))))
+
+(define (vars->sub-temp&exprs vars)
+  (for/list ([idx (in-naturals)]
+             [var (in-list vars)]
+             #:when (Subscript? var))
+    (list (format-id #f "#%sub-lhs-temp~a" idx)
+          (compile-expr* (Subscript-e var))
+          (format-id #f "#%sub-rhs-temp~a" idx)
+          (compile-expr* (Subscript-sub-e var)))))
+
+(define (compile-assignment-var var idx)
+  (compile-expr
+   (match var
+     [(Attribute ctxt _ name)
+      (define temp (format-sym "#%attr-temp~a" idx))
+      (Attribute ctxt temp name)]
+     [(Subscript ctxt _ _)
+      (define lhs-temp (format-sym "#%sub-lhs-temp~a" idx))
+      (define rhs-temp (format-sym "#%sub-rhs-temp~a" idx))
+      (Subscript ctxt lhs-temp rhs-temp)]
+     [_
+      var])))
+
+(define (format-sym fmt . args)
+  (string->symbol (apply format fmt args)))

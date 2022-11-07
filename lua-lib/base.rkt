@@ -52,9 +52,6 @@
 (define-syntax (lua:set! stx)
   (syntax-parse stx
     #:literals (#%subscript)
-    [(_ (#%subscript t:expr k:id) v:expr)
-     #:with name (id-stx->bytes-stx #'k)
-     #'(table-set! t name v)]
     [(_ (#%subscript t:expr k:expr) v:expr)
      #'(table-set! t k v)]
     [(_ id:id e:expr)

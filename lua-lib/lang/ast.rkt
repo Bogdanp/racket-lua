@@ -48,6 +48,7 @@
   [If (cond-expr then-block else-block)]
   [Label (name)]
   [LocalAssignment (name expr)]
+  [LocalFunction (name params block)]
   [MethodDef (name attr params block)]
   [Repeat (cond-expr block)]
   [Return (exprs)]
@@ -56,4 +57,4 @@
   [Unop (name expr)]
   [While (cond-expr block)]
 
-  [Let (name stmts)])
+  [Let (vars exprs stmts)])
