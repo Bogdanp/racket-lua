@@ -280,12 +280,7 @@
             (loop (step rhs-e next-prec))]
 
            [_
-            (step
-             (Call
-              (token-ctxt tok)
-              (token-val tok)
-              (list lhs-e rhs-e))
-             depth)]))]
+            (step (Binop (token-ctxt tok) (token-val tok) lhs-e rhs-e) depth)]))]
       [_ lhs-e])))
 
 (define (parse-term l)
@@ -334,8 +329,8 @@
       [else (error 'parse-unary-expr "bad id: ~a" id)]))
   (define tok (expect l 'op id))
   (define prec (precedence op))
-  (define rhs-e (parse-expr l (parse-term l) prec))
-  (Call (token-ctxt tok) op (list rhs-e)))
+  (define expr (parse-expr l (parse-term l) prec))
+  (Unop (token-ctxt tok) op expr))
 
 (define (parse-args l)
   (match (lexer-peek l)

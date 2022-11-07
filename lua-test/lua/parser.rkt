@@ -81,29 +81,29 @@
     (test-suite
      "unary ops"
 
-     (check-parse "print(not true)" (Block ((Call print ((Call not (#t)))))))
-     (check-parse "print(#table)" (Block ((Call print ((Call #%length (table)))))))
-     (check-parse "print(~42)" (Block ((Call print ((Call #%bitwise-not (42)))))))
+     (check-parse "print(not true)" (Block ((Call print ((Unop not #t))))))
+     (check-parse "print(#table)" (Block ((Call print ((Unop #%length table))))))
+     (check-parse "print(~42)" (Block ((Call print ((Unop #%bitwise-not 42))))))
      (check-parse
       "print(not true and false)"
       (Block
-       ((Call print ((Call and ((Call not (#t)) #f)))))))
+       ((Call print ((Binop and (Unop not #t) #f))))))
      (check-parse
       "print(not (true and false))"
       (Block
-       ((Call print ((Call not ((Call and (#t #f)))))))))
+       ((Call print ((Unop not (Binop and #t #f)))))))
      (check-parse
       "print(#table > 5)"
       (Block
-       ((Call print ((Call > ((Call #%length (table)) 5)))))))
+       ((Call print ((Binop > (Unop #%length table) 5))))))
      (check-parse
       "print(~x^2)"
       (Block
-       ((Call print ((Call #%bitwise-not ((Call ^ (x 2)))))))))
+       ((Call print ((Unop #%bitwise-not (Binop ^ x 2)))))))
      (check-parse
       "print(~x^2 + 3)"
       (Block
-       ((Call print ((Call + ((Call #%bitwise-not ((Call ^ (x 2)))) 3))))))))
+       ((Call print ((Binop + (Unop #%bitwise-not (Binop ^ x 2)) 3)))))))
 
     (test-suite
      "binary ops"
@@ -111,31 +111,56 @@
      (check-parse
       "print(1 + 2 * (3 - 4 // 2 ^ 2) == 12 and false or true)"
       (Block
-       ((Call print ((Call or ((Call and ((Call == ((Call + (1 (Call * (2 (Call - (3 (Call // (4 (Call ^ (2 2)))))))))) 12))
-                                          #f))
-                               #t)))))))
+       ((Call print ((Binop or
+                            (Binop and
+                                   (Binop ==
+                                          (Binop +
+                                                 1
+                                                 (Binop *
+                                                        2
+                                                        (Binop -
+                                                               3
+                                                               (Binop //
+                                                                      4
+                                                                      (Binop ^ 2 2)))))
+                                          12)
+                                   #f)
+                            #t))))))
+
 
      (check-parse
       "print(1 + 2 * (3 - 4 // 2 ^ 2) == 12 and not false or true)"
       (Block
-       ((Call print ((Call or ((Call and ((Call == ((Call + (1 (Call * (2 (Call - (3 (Call // (4 (Call ^ (2 2)))))))))) 12))
-                                          (Call not (#f))))
-                               #t)))))))
+       ((Call print ((Binop or
+                            (Binop and
+                                   (Binop ==
+                                          (Binop +
+                                                 1
+                                                 (Binop *
+                                                        2
+                                                        (Binop -
+                                                               3
+                                                               (Binop //
+                                                                      4
+                                                                      (Binop ^ 2 2)))))
+                                          12)
+                                   (Unop not #f))
+                            #t))))))
 
      (check-parse
       "print(1 + 2 ^ 3 ^ 4)"
       (Block
-       ((Call print ((Call + (1 (Call ^ (2 (Call ^ (3 4)))))))))))
+       ((Call print ((Binop + 1 (Binop ^ 2 (Binop ^ 3 4))))))))
 
      (check-parse
       "print('a' .. 'b' .. 'c')"
       (Block
-       ((Call print ((Call .. (#"a" (Call .. (#"b" #"c")))))))))
+       ((Call print ((Binop .. #"a" (Binop .. #"b" #"c")))))))
 
      (check-parse
       "print(('a' .. 'b') .. 'c')"
       (Block
-       ((Call print ((Call .. ((Call .. (#"a" #"b")) #"c"))))))))
+       ((Call print ((Binop .. (Binop .. #"a" #"b") #"c")))))))
 
     (test-suite
      "function"
@@ -157,7 +182,7 @@ end)(42)
 EOF
       (Block
        ((Call
-         (Func (x) (Block ((Return ((Call + (x x)))))))
+         (Func (x) (Block ((Return ((Binop + x x))))))
          (42)))))
 
      (check-parse
@@ -168,7 +193,7 @@ end)(42)
 EOF
       (Block
        ((Call
-         (Func (x) (Block ((Return ((Call + (x x)) 42)))))
+         (Func (x) (Block ((Return ((Binop + x x) 42)))))
          (42))))))
 
     (test-suite
@@ -184,7 +209,7 @@ EOF
          (t)
          ((Table
            ((Field 1)
-            (FieldExpr (Call + (0 1)) 1)
+            (FieldExpr (Binop + 0 1) 1)
             (FieldLit foo 2))))))))))))
 
 (module+ test

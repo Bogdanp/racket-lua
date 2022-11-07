@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require racket/list
+(require (for-syntax racket/base
+                     syntax/parse)
+         racket/list
          racket/match
          racket/syntax
          "ast.rkt")
@@ -22,14 +24,12 @@
        (#%begin statement ... (#%values))))])
 
 (define/match (compile-statement _)
-  [((Assignment ctxt vars (list exprs ... (and (or (? Call?) '#%rest) vararg-expr))))
+  [((Assignment ctxt vars (list exprs ... (vararg vararg-expr))))
    (with-syntax ([((var expr) ...)
                   (for/list ([var (in-list vars)]
                              [expr (in-list exprs)])
                     (list (compile-expr var)
-                          (if (Call? expr)
-                              (list '#%adjust (compile-expr expr))
-                              (compile-expr expr))))]
+                          (compile-expr* expr)))]
                  [vararg-expr (compile-expr vararg-expr)]
                  [((va-var va-idx) ...)
                   (let ([start (min (length vars) (length exprs))])
@@ -40,16 +40,14 @@
        (#%begin
         (#%set! var expr) ...
         (#%let
-         ([#%t (#%table vararg-expr)])
+         ([#%t (#%apply #%table (#%adjust-va vararg-expr))])
          (#%set! va-var (#%table-ref #%t va-idx)) ...))))]
 
   [((Assignment ctxt vars exprs))
    (with-syntax ([((var expr) ...) (for/list ([var (in-list vars)]
                                               [expr (in-list exprs)])
                                      (list (compile-expr var)
-                                           (if (Call? expr)
-                                               (list '#%adjust (compile-expr expr))
-                                               (compile-expr expr))))])
+                                           (compile-expr* expr)))])
      (syntax/loc ctxt
        (#%begin (#%set! var expr) ...)))]
 
@@ -57,11 +55,18 @@
    (syntax/loc ctxt
      (#%break))]
 
-  [((Call ctxt expr args))
-   (with-syntax ([expr (compile-expr expr)]
-                 [(arg-expr ...) (map compile-expr args)])
+  [((Call ctxt rator-expr (list rand-exprs ... (vararg vararg-expr))))
+   (with-syntax ([rator-expr (compile-expr* rator-expr)]
+                 [(rand-expr ...) (map compile-expr* rand-exprs)]
+                 [vararg-expr (compile-expr vararg-expr)])
      (syntax/loc ctxt
-       (expr arg-expr ...)))]
+       (#%apply rator-expr rand-expr ... (#%adjust-va vararg-expr))))]
+
+  [((Call ctxt rator-expr rand-exprs))
+   (with-syntax ([rator-expr (compile-expr* rator-expr)]
+                 [(rand-expr ...) (map compile-expr* rand-exprs)])
+     (syntax/loc ctxt
+       (rator-expr rand-expr ...)))]
 
   [((Do ctxt block))
    (with-syntax ([block (compile-block block)])
@@ -119,12 +124,8 @@
                  [else-block (compile-statement elseif-block)])
      (syntax/loc ctxt
        (#%cond
-        [cond-expr
-         then-block
-         nil]
-        [#%else
-         else-block
-         nil])))]
+        [cond-expr then-block nil]
+        [#%else else-block nil])))]
 
   [((If ctxt cond-expr then-block else-block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
@@ -132,12 +133,8 @@
                  [else-block (compile-block else-block)])
      (syntax/loc ctxt
        (#%cond
-        [cond-expr
-         then-block
-         nil]
-        [#%else
-         else-block
-         nil])))]
+        [cond-expr then-block nil]
+        [#%else else-block nil])))]
 
   [((Label ctxt name))
    (with-syntax ([name (format-label-id name)])
@@ -156,8 +153,14 @@
      (syntax/loc ctxt
        (#%let/ec #%break (#%let #%repeat () block (#%unless cond-expr (#%repeat))))))]
 
+  [((Return ctxt (list exprs ... (vararg vararg-expr))))
+   (with-syntax ([(expr ...) (map compile-expr* exprs)]
+                 [vararg-expr (compile-expr vararg-expr)])
+     (syntax/loc ctxt
+       (#%apply #%return expr ... (#%adjust-va vararg-expr))))]
+
   [((Return ctxt exprs))
-   (with-syntax ([(expr ...) (map compile-expr exprs)])
+   (with-syntax ([(expr ...) (map compile-expr* exprs)])
      (syntax/loc ctxt
        (#%return expr ...)))]
 
@@ -167,6 +170,14 @@
      (syntax/loc ctxt
        (#%let/ec #%break (#%let #%while () (#%when cond-expr block (#%while))))))])
 
+(define/match (compile-expr* e)
+  [((Call ctxt _ _))
+   (with-syntax ([expr (compile-expr e)])
+     (syntax/loc ctxt
+       (#%adjust expr)))]
+  [(_)
+   (compile-expr e)])
+
 (define/match (compile-expr e)
   [('nil)         (datum->syntax #f e)]
   [((? boolean?)) (datum->syntax #f e)]
@@ -174,11 +185,25 @@
   [((? bytes?))   (datum->syntax #f e)]
   [((? symbol?))  (datum->syntax #f e)]
 
-  [((Call ctxt e args))
-   (with-syntax ([rator (compile-expr e)]
-                 [(rand ...) (map compile-expr args)])
+  [((Binop ctxt op lhs-expr rhs-expr))
+   (with-syntax ([binop op]
+                 [lhs-expr (compile-expr* lhs-expr)]
+                 [rhs-expr (compile-expr* rhs-expr)])
      (syntax/loc ctxt
-       (rator rand ...)))]
+       (binop lhs-expr rhs-expr)))]
+
+  [((Call ctxt rator-expr (list rand-exprs ... (vararg vararg-expr))))
+   (with-syntax ([rator-expr (compile-expr* rator-expr)]
+                 [(rand-expr ...) (map compile-expr* rand-exprs)]
+                 [vararg-expr (compile-expr vararg-expr)])
+     (syntax/loc ctxt
+       (#%apply rator-expr rand-expr ... (#%adjust-va vararg-expr))))]
+
+  [((Call ctxt rator-expr rand-exprs))
+   (with-syntax ([rator-expr (compile-expr* rator-expr)]
+                 [(rand-expr ...) (map compile-expr* rand-exprs)])
+     (syntax/loc ctxt
+       (rator-expr rand-expr ...)))]
 
   [((Func ctxt (list params ... '...) block))
    (with-syntax ([(param ...) params]
@@ -198,26 +223,38 @@
      (syntax/loc ctxt
        (#%subscript expr field-expr)))]
 
-  [((Table ctxt fields))
-   (with-syntax ([(field ...) (map compile-field fields)])
+  [((Table ctxt (list field-exprs ... (Field _ (vararg vararg-expr)))))
+   (with-syntax ([(field-expr ...) (map compile-field field-exprs)]
+                 [vararg-expr (compile-expr vararg-expr)])
      (syntax/loc ctxt
-       (#%table field ...)))])
+       (#%apply #%table field-expr ... (#%adjust-va vararg-expr))))]
+
+  [((Table ctxt field-exprs))
+   (with-syntax ([(field-expr ...) (map compile-field field-exprs)])
+     (syntax/loc ctxt
+       (#%table field-expr ...)))]
+
+  [((Unop ctxt op expr))
+   (with-syntax ([unop op]
+                 [expr (compile-expr* expr)])
+     (syntax/loc ctxt
+       (unop expr)))])
 
 (define/match (compile-field e)
   [((Field ctxt expr))
-   (with-syntax ([expr (compile-expr expr)])
+   (with-syntax ([expr (compile-expr* expr)])
      (syntax/loc ctxt
        expr))]
 
   [((FieldExpr ctxt field-expr value-expr))
-   (with-syntax ([field-expr (compile-expr field-expr)]
-                 [value-expr (compile-expr value-expr)])
+   (with-syntax ([field-expr (compile-expr* field-expr)]
+                 [value-expr (compile-expr* value-expr)])
      (syntax/loc ctxt
        (#%cons field-expr value-expr)))]
 
   [((FieldLit ctxt name expr))
    (with-syntax ([name (symbol->bytes name)]
-                 [expr (compile-expr expr)])
+                 [expr (compile-expr* expr)])
      (syntax/loc ctxt
        (#%cons name expr)))])
 
@@ -248,3 +285,8 @@
 
 (define symbol->bytes
   (compose1 string->bytes/utf-8 symbol->string))
+
+(define-match-expander vararg
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ e) #'(and (or (? Call?) '#%rest) e)])))

@@ -32,6 +32,7 @@
 (define-node-types
   [Assignment (vars exprs)]
   [Attribute (e name)]
+  [Binop (name lhs-expr rhs-expr)]
   [Block (stmts)]
   [Break ()]
   [Call (expr args)]
@@ -51,6 +52,7 @@
   [Return (exprs)]
   [Subscript (e sub-e)]
   [Table (fields)]
+  [Unop (name expr)]
   [While (cond-expr block)]
 
   [Let (name stmts)])

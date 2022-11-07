@@ -12,11 +12,14 @@
 
 (provide
  #%adjust
+ #%adjust-va
+ #%app
  #%datum
  #%subscript
  #%va-args
  (rename-out
   [#%plain-module-begin #%module-begin]
+  [apply #%apply]
   [begin #%begin]
   [call/cc #%call/cc]
   [cond #%cond]
@@ -28,7 +31,6 @@
   [let #%let]
   [let/ec #%let/ec]
   [provide #%provide]
-  [lua:app #%app]
   [lua:set! #%set!]
   [lua:top #%top]
   [unless #%unless]
@@ -38,17 +40,6 @@
 (begin-for-syntax
   (define (id-stx->bytes-stx stx)
     (datum->syntax stx (string->bytes/utf-8 (symbol->string (syntax->datum stx))))))
-
-(define-syntax (lua:app stx)
-  (define-syntax-class app-arg
-    (pattern (app-e ...) #:with adjusted #'(#%adjust (app-e ...)))
-    (pattern e #:with adjusted #'e))
-
-  (syntax-parse stx
-    [(_ proc arg:app-arg ... (vararg ...))
-     #'(#%app apply proc arg.adjusted ... (#%varargs (vararg ...)))]
-    [(_ proc arg:app-arg ...)
-     #'(#%app proc arg.adjusted ...)]))
 
 (define-syntax (lua:top stx)
   (syntax-parse stx
@@ -80,15 +71,15 @@
 
 (define-syntax (#%adjust stx)
   (syntax-parse stx
-    [(_ e ...+)
+    [(_ e)
      #'(call-with-values
-        (lambda () e ...)
+        (lambda () e)
         (lambda vals (if (null? vals) nil (car vals))))]))
 
-(define-syntax (#%varargs stx)
+(define-syntax (#%adjust-va stx)
   (syntax-parse stx
-    [(_ e ...+)
-     #'(call-with-values (lambda () e ...) list)]))
+    [(_ e)
+     #'(call-with-values (lambda () e) list)]))
 
 (define-syntax (#%va-args stx)
   (syntax-parse stx
