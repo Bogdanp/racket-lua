@@ -185,6 +185,12 @@
   [((? bytes?))   (datum->syntax #f e)]
   [((? symbol?))  (datum->syntax #f e)]
 
+  [((Attribute ctxt expr name))
+   (with-syntax ([expr (compile-expr* expr)]
+                 [name (symbol->bytes name)])
+     (syntax/loc ctxt
+       (#%table-ref expr name)))]
+
   [((Binop ctxt op lhs-expr rhs-expr))
    (with-syntax ([binop op]
                  [lhs-expr (compile-expr* lhs-expr)]
