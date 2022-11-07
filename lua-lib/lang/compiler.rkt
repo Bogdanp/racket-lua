@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/match
+(require racket/list
+         racket/match
          racket/syntax
          "ast.rkt")
 
@@ -12,29 +13,43 @@
     #'((#%provide #%chunk)
        (#%define _ENV (#%global))
        (#%define (#%chunk-proc . #%rest) (#%let/ec #%return block))
-       (#%define #%chunk (#%chunk-proc)))))
+       (#%define #%chunk (#%adjust (#%chunk-proc))))))
 
 (define/match (compile-block _)
   [((Block ctxt stmts))
    (with-syntax ([(statement ...) (map compile-statement (Lua->L1 stmts))])
      (syntax/loc ctxt
-       (#%begin statement ... (#%void))))])
+       (#%begin statement ... (#%values))))])
 
 (define/match (compile-statement _)
-  [((Assignment ctxt vars '(#%rest)))
-   (with-syntax ([((var idx) ...) (for/list ([idx (in-naturals 1)]
-                                             [var (in-list vars)])
-                                    (list (compile-expr var) idx))])
+  [((Assignment ctxt vars (list exprs ... (and (or (? Call?) '#%rest) vararg-expr))))
+   (with-syntax ([((var expr) ...)
+                  (for/list ([var (in-list vars)]
+                             [expr (in-list exprs)])
+                    (list (compile-expr var)
+                          (if (Call? expr)
+                              (list '#%adjust (compile-expr expr))
+                              (compile-expr expr))))]
+                 [vararg-expr (compile-expr vararg-expr)]
+                 [((va-var va-idx) ...)
+                  (let ([start (min (length vars) (length exprs))])
+                    (for/list ([idx (in-naturals (add1 start))]
+                               [var (in-list (drop vars start))])
+                      (list (compile-expr var) idx)))])
      (syntax/loc ctxt
-       (#%let
-        ([#%t (#%table #%rest)])
-        (#%set! var (#%table-ref #%t idx)) ...)))]
+       (#%begin
+        (#%set! var expr) ...
+        (#%let
+         ([#%t (#%table vararg-expr)])
+         (#%set! va-var (#%table-ref #%t va-idx)) ...))))]
 
   [((Assignment ctxt vars exprs))
    (with-syntax ([((var expr) ...) (for/list ([var (in-list vars)]
                                               [expr (in-list exprs)])
                                      (list (compile-expr var)
-                                           (compile-expr expr)))])
+                                           (if (Call? expr)
+                                               (list '#%adjust (compile-expr expr))
+                                               (compile-expr expr))))])
      (syntax/loc ctxt
        (#%begin (#%set! var expr) ...)))]
 
@@ -84,7 +99,7 @@
                  [(param ...) params]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%define (name [param nil] ...) (#%let/ec #%return block))))]
+       (#%define (name [param nil] ... . #%unusable-rest) (#%let/ec #%return block))))]
 
   ;; FIXME: goto needs to be able to jump forwards.
   [((Goto ctxt name))
@@ -106,10 +121,10 @@
        (#%cond
         [cond-expr
          then-block
-         (#%void)]
+         nil]
         [#%else
          else-block
-         (#%void)])))]
+         nil])))]
 
   [((If ctxt cond-expr then-block else-block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
@@ -119,10 +134,10 @@
        (#%cond
         [cond-expr
          then-block
-         (#%void)]
+         nil]
         [#%else
          else-block
-         (#%void)])))]
+         nil])))]
 
   [((Label ctxt name))
    (with-syntax ([name (format-label-id name)])

@@ -1,0 +1,1 @@
+"1\tnil\n1\t2\n1\t2\n1\t2\n1\t1\n1\t1\n\n1\t1\n1\t2\n<function>\t<function>\n1\n1\n2\nnil\n1\t2\tnil\n1\t2\t3\t3\n1\t2\t3\t3\t4\n1\t2\t3\t3\t4\t5\nk:\t0\n<table>\nnil\nnil\nk:\t2\n<table>\n1\n2\nk:\t3\n<table>\n1\n1\nk:\t3\n<table>\n1\n1\nk:\t2\n<table>\n1\n2\n"

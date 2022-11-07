@@ -11,9 +11,10 @@
 ;; kernel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- #%app
+ #%adjust
  #%datum
  #%subscript
+ #%va-args
  (rename-out
   [#%plain-module-begin #%module-begin]
   [begin #%begin]
@@ -27,25 +28,36 @@
   [let #%let]
   [let/ec #%let/ec]
   [provide #%provide]
-  [lua-set! #%set!]
-  [lua-top #%top]
+  [lua:app #%app]
+  [lua:set! #%set!]
+  [lua:top #%top]
   [unless #%unless]
   [values #%values]
-  [void #%void]
   [when #%when]))
 
 (begin-for-syntax
   (define (id-stx->bytes-stx stx)
     (datum->syntax stx (string->bytes/utf-8 (symbol->string (syntax->datum stx))))))
 
-(define-syntax (lua-top stx)
+(define-syntax (lua:app stx)
+  (define-syntax-class app-arg
+    (pattern (app-e ...) #:with adjusted #'(#%adjust (app-e ...)))
+    (pattern e #:with adjusted #'e))
+
+  (syntax-parse stx
+    [(_ proc arg:app-arg ... (vararg ...))
+     #'(#%app apply proc arg.adjusted ... (#%varargs (vararg ...)))]
+    [(_ proc arg:app-arg ...)
+     #'(#%app proc arg.adjusted ...)]))
+
+(define-syntax (lua:top stx)
   (syntax-parse stx
     [(_ . id:id)
      #:with name (id-stx->bytes-stx #'id)
      #:with env (format-id #'id "_ENV")
      #'(#%subscript env name)]))
 
-(define-syntax (lua-set! stx)
+(define-syntax (lua:set! stx)
   (syntax-parse stx
     #:literals (#%subscript)
     [(_ (#%subscript t:expr k:id) v:expr)
@@ -66,6 +78,24 @@
     [(_ t:expr k:expr)
      #'(table-ref t k)]))
 
+(define-syntax (#%adjust stx)
+  (syntax-parse stx
+    [(_ e ...+)
+     #'(call-with-values
+        (lambda () e ...)
+        (lambda vals (if (null? vals) nil (car vals))))]))
+
+(define-syntax (#%varargs stx)
+  (syntax-parse stx
+    [(_ e ...+)
+     #'(call-with-values (lambda () e ...) list)]))
+
+(define-syntax (#%va-args stx)
+  (syntax-parse stx
+    [(#%va-args)
+     #:with #%rest (format-id #'#%va-args "#%rest")
+     #'(apply values #%rest)]))
+
 
 ;; global environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; https://www.lua.org/manual/5.4/manual.html#2.2
@@ -80,14 +110,14 @@
 
 (provide
  (rename-out
-  [lua-unary-- #%unary-minus]
-  [lua-+ +]
-  [lua-- -]
-  [lua-* *]
-  [lua-/ /]
-  [lua-// //]
-  [lua-% %]
-  [lua-pow ^]))
+  [lua:unary-- #%unary-minus]
+  [lua:+ +]
+  [lua:- -]
+  [lua:* *]
+  [lua:/ /]
+  [lua:// //]
+  [lua:% %]
+  [lua:pow ^]))
 
 (define-syntax-rule (define-numeric-unop id who integer-proc real-proc)
   (define (id x)
@@ -96,7 +126,7 @@
       [(real? x) (real-proc x)]
       [else (raise-argument-error 'who "expected a number" x)])))
 
-(define-numeric-unop lua-unary-- '- - -)
+(define-numeric-unop lua:unary-- '- - -)
 
 (define-syntax-rule (define-numeric-binop id who integer-proc real-proc)
   (define (id x y)
@@ -113,21 +143,21 @@
       [else
        (raise-arguments-error 'who "expected two numbers" "x" x "y" y)])))
 
-(define (lua-real-modulo x y)
+(define (lua:real-modulo x y)
   (modulo
    (floor x)
    (floor y)))
 
-(define (lua-real-quotient x y)
+(define (lua:real-quotient x y)
   (floor (/ x y)))
 
-(define-numeric-binop lua-+ + + +)
-(define-numeric-binop lua-- - - -)
-(define-numeric-binop lua-* * * *)
-(define-numeric-binop lua-% % modulo lua-real-modulo)
-(define-numeric-binop lua-// // quotient lua-real-quotient)
+(define-numeric-binop lua:+ + + +)
+(define-numeric-binop lua:- - - -)
+(define-numeric-binop lua:* * * *)
+(define-numeric-binop lua:% % modulo lua:real-modulo)
+(define-numeric-binop lua:// // quotient lua:real-quotient)
 
-(define (lua-/ x y)
+(define (lua:/ x y)
   (cond
     [(and (number? x)
           (number? y))
@@ -137,7 +167,7 @@
     [else
      (raise-arguments-error '/ "expected two numbers" "x" x "y" y)]))
 
-(define lua-pow
+(define lua:pow
   (procedure-rename expt 'pow))
 
 
@@ -147,22 +177,22 @@
 (provide
  (rename-out
   [not #%unary-not]
-  [lua-== ==]
-  [lua-~= ~=]
-  [lua-<  < ]
-  [lua-<= <=]
-  [lua->  > ]
-  [lua->= >=]))
+  [lua:== ==]
+  [lua:~= ~=]
+  [lua:<  < ]
+  [lua:<= <=]
+  [lua:>  > ]
+  [lua:>= >=]))
 
-(define lua-==
+(define lua:==
   (procedure-rename equal? '==))
-(define (lua-~= a b)
-  (not (lua-== a b)))
+(define (lua:~= a b)
+  (not (lua:== a b)))
 
-(define-numeric-binop lua-<  <  <  < )
-(define-numeric-binop lua-<= <= <= <=)
-(define-numeric-binop lua->  >  >  > )
-(define-numeric-binop lua->= >= >= >=)
+(define-numeric-binop lua:<  <  <  < )
+(define-numeric-binop lua:<= <= <= <=)
+(define-numeric-binop lua:>  >  >  > )
+(define-numeric-binop lua:>= >= >= >=)
 
 
 ;; length ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -170,9 +200,9 @@
 
 (provide
  (rename-out
-  [lua-length #%length]))
+  [lua:length #%length]))
 
-(define (lua-length v)
+(define (lua:length v)
   (cond
     [(bytes? v)
      (bytes-length v)]

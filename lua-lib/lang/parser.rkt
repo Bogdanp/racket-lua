@@ -307,8 +307,9 @@
        (skip l 'string))]
     [(name _)
      (parse-primaryexp l)]
-    [(dotdotdot)
-     (begin0 '#%rest
+    [(and (dotdotdot) tok)
+     (define ctxt (token-ctxt tok))
+     (begin0 (Call ctxt '#%va-args null)
        (skip l 'dotdotdot))]
     [(op (and (or 'not '\# '~ '-) id))
      (parse-unary-expr l id)]

@@ -26,7 +26,7 @@
         (call-with-output-string
          (lambda (out)
            (parameterize ([current-global-environment (make-initial-environment)]
-                          [current-print-table-ids? #f]
+                          [current-print-ids? #f]
                           [current-output-port out])
              (dynamic-require `(file ,(path->string path)) #f)))))
       (with-handlers ([exn:fail:filesystem?
