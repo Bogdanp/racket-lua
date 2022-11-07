@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require "string.rkt")
+
 (provide
  lua:pcall
  lua:error)
@@ -12,4 +14,5 @@
     (values #t (apply proc args))))
 
 (define (lua:error v [level 1] . _)
-  (raise (exn:fail:lua "error" (current-continuation-marks) v level)))
+  (define message (format "error: ~a" (lua:tostring v)))
+  (raise (exn:fail:lua message (current-continuation-marks) v level)))

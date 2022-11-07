@@ -48,6 +48,7 @@
   [If (cond-expr then-block else-block)]
   [Label (name)]
   [LocalAssignment (name expr)]
+  [MethodDef (name attr params block)]
   [Repeat (cond-expr block)]
   [Return (exprs)]
   [Subscript (e sub-e)]

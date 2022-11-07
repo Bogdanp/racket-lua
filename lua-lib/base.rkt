@@ -33,6 +33,7 @@
   [provide #%provide]
   [lua:set! #%set!]
   [lua:top #%top]
+  [time #%time]
   [unless #%unless]
   [values #%values]
   [when #%when]))
@@ -167,7 +168,9 @@
 
 (provide
  (rename-out
-  [not #%unary-not]
+  [lua:and and]
+  [lua:or or]
+  [lua:not #%unary-not]
   [lua:== ==]
   [lua:~= ~=]
   [lua:<  < ]
@@ -184,6 +187,15 @@
 (define-numeric-binop lua:<= <= <= <=)
 (define-numeric-binop lua:>  >  >  > )
 (define-numeric-binop lua:>= >= >= >=)
+
+(define (lua:not v)
+  (if (nil? v) #t (not v)))
+
+(define-syntax-rule (lua:and a b)
+  (nil~> a (and b)))
+
+(define-syntax-rule (lua:or a b)
+  (if (nil? a) b (or a b)))
 
 
 ;; length ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

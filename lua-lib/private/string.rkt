@@ -23,8 +23,8 @@
      [(eq? v #t) "true"]
      [(eq? v #f) "false"]
      [(eq? v nil) "nil"]
-     [(procedure? v) (->string "function" v)]
      [(table? v) (->string "table" v)]
+     [(procedure? v) (->string "function" v)]
      [else (~a v)])))
 
 (define (lua:print . vs)

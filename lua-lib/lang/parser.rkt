@@ -133,12 +133,15 @@
     [(keyword 'if)
      (parse-if-block l)]
     [(keyword 'function)
+     (define ctxt (token-ctxt (expect l 'keyword 'function)))
      (define function
-       (FuncDef
-        (token-ctxt (expect l 'keyword 'function))
-        (parse-name l)
-        (parse-params l)
-        (parse-block l)))
+       (match (parse-funcname l)
+         [(? symbol? name)
+          (FuncDef ctxt name (parse-params l) (parse-block l))]
+         [(? list? names)
+          (FuncDef ctxt names (parse-params l) (parse-block l))]
+         [(cons names attr)
+          (MethodDef ctxt names attr (parse-params l) (parse-block l))]))
      (begin0 function
        (skip l 'keyword 'end))]
     [(keyword 'for)
@@ -438,6 +441,22 @@
      (Field
       (token-ctxt tok)
       (parse-expr l))]))
+
+(define (parse-funcname l)
+  (let loop ([names null])
+    (define name
+      (parse-name l))
+    (match (lexer-peek l)
+      [(dot)
+       (skip l 'dot)
+       (loop (cons name names))]
+      [(colon)
+       (skip l 'colon)
+       (define attrib (reverse (cons name names)))
+       (define method (parse-name l))
+       (cons attrib method)]
+      [_ #:when (null? names) name]
+      [_ (reverse (cons name names))])))
 
 (define (parse-name l)
   (token-val (expect l 'name)))
