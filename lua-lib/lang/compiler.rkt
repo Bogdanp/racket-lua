@@ -216,7 +216,7 @@
        (#%cons field-expr value-expr)))]
 
   [((FieldLit ctxt name expr))
-   (with-syntax ([name name]
+   (with-syntax ([name (symbol->bytes name)]
                  [expr (compile-expr expr)])
      (syntax/loc ctxt
        (#%cons name expr)))])
@@ -245,3 +245,6 @@
 
 (define (format-label-id name-id)
   (format-id #f "#%label:~a" name-id))
+
+(define symbol->bytes
+  (compose1 string->bytes/utf-8 symbol->string))
