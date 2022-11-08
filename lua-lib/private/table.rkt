@@ -7,6 +7,7 @@
  table?
  make-table
  table-length
+ table-meta-ref
  table-ref
  table-set!
  table-keys
@@ -14,7 +15,7 @@
  lua:getmetatable
  lua:setmetatable)
 
-(struct table ([meta #:mutable] ht)
+(struct table (ht)
   #:transparent)
 
 (define (make-table . args)
@@ -30,16 +31,25 @@
         [_
          (hash-set! ht index arg)
          (set! index (add1 index))])))
-  (table nil ht))
+  (table ht))
 
 (define (table-length t)
   (apply max 0 (hash-keys (table-ht t))))
 
-(define (table-ref t v)
-  (hash-ref (table-ht t) v (lambda ()
-                             (nil~> (table-meta t)
-                                    (table-ref #"__index")
-                                    (table-ref v)))))
+(define (table-meta-ref t k [default-proc (λ () nil)])
+  (define res
+    (nil~>
+     (lua:getmetatable t)
+     (table-ref k)))
+  (cond
+    [(nil? res) (default-proc)]
+    [else res]))
+
+(define (table-ref t k [default-proc (lambda ()
+                                       (nil~>
+                                        (table-meta-ref t #"__index")
+                                        (table-ref k)))])
+  (hash-ref (table-ht t) k default-proc))
 
 (define (table-set! t k v)
   (if (nil? v)
@@ -50,7 +60,7 @@
   (hash-keys (table-ht t)))
 
 (define (lua:getmetatable t . _)
-  (table-meta t))
+  (table-ref t #"__metatable" nil))
 
 (define (lua:setmetatable t meta . _)
-  (set-table-meta! t meta))
+  (table-set! t #"__metatable" meta))

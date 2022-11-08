@@ -1,0 +1,1 @@
+"__pairs\n1\t1\n2\t2\n3\t3\n__metatable\t<table>\n"

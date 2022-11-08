@@ -36,15 +36,21 @@
       (values nil nil)
       (values key (table-ref t key))))
 
-;; TODO: __pairs
 (define (lua:pairs t . _)
-  (values lua:next t nil))
+  (define __pairs
+    (table-meta-ref t #"__pairs"))
+  (cond
+    [(nil? __pairs)
+     (values lua:next t nil)]
+    [else
+     (__pairs t)]))
 
 (define (lua:ipairs t . _)
-  (define (next t idx)
+  (define (next s idx)
     (cond
-      [(nil? idx) (values nil nil)]
+      [(nil? idx)
+       (values nil nil)]
       [else
        (define next-idx (add1 idx))
-       (values (table-ref t next-idx) next-idx)]))
+       (values (table-ref s next-idx) next-idx)]))
   (values next t 0))

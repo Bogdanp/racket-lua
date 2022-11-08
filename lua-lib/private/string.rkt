@@ -25,12 +25,13 @@
       [(eq? v nil) "nil"]
       [(table? v)
        (define custom-tostring
-         (nil~>
-          (lua:getmetatable v)
-          (table-ref #"__tostring")))
-       (if (nil? custom-tostring)
-           (->string "table" v)
-           (custom-tostring v))]
+         (table-meta-ref v #"__tostring"))
+       (cond
+         [(nil? custom-tostring)
+          (define name (table-meta-ref v #"__name" (λ () #"table")))
+          (->string name v)]
+         [else
+          (custom-tostring v)])]
       [(procedure? v)
        (->string "function" v)]
       [else
