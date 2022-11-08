@@ -70,7 +70,7 @@
 (define-syntax (lua:unless stx)
   (syntax-parse stx
     [(_ cond-expr body ...+)
-     #'(unless (falsy? cond-expr)
+     #'(unless (truthy? cond-expr)
          body ...)]))
 
 (define-syntax (lua:when stx)

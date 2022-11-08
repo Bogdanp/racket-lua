@@ -17,4 +17,5 @@ repeat
     if not ok then
         print("fail")
     end
+    ok = nil
 until not ok
