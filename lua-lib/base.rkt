@@ -3,6 +3,7 @@
 (require (for-syntax racket/base
                      racket/syntax
                      syntax/parse)
+         "private/error.rkt"
          "private/env.rkt"
          "private/nil.rkt"
          "private/string.rkt"
@@ -26,11 +27,11 @@
   [cons #%cons]
   [define #%define]
   [else #%else]
-  [error #%error]
   [lambda #%lambda]
   [let #%let]
   [let/ec #%let/ec]
   [provide #%provide]
+  [lua:error #%error]
   [lua:set! #%set!]
   [lua:top #%top]
   [time #%time]
