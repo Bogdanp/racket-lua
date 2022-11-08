@@ -73,4 +73,5 @@
 (define (lua:setmetatable t meta . _)
   (unless (table? meta)
     (raise-argument-error 'setmetatable "a table" 1 t meta))
-  (set-table-meta! t meta))
+  (begin0 t
+    (set-table-meta! t meta)))
