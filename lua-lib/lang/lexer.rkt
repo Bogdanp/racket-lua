@@ -180,22 +180,15 @@
   [(#\=) (λcase [(#\=) stop])]
   [(#\~) (λcase [(#\=) stop])])
 
-(define (name-start? c)
+(define ((make-name-predicate [char-categories '(ll lu nd)]) c)
   (and
    (char? c)
    (or (char=? c #\_)
-       (member (char-general-category c) '(ll lu)))
+       (member (char-general-category c) char-categories))
    name-more?))
 
-(define (name-more? c)
-  (case c
-    [(#\? #\!) stop]
-    [else
-     (and
-      (char? c)
-      (or (char=? c #\_)
-          (member (char-general-category c) '(ll lu nd)))
-      name-more?)]))
+(define name-start? (make-name-predicate '(ll lu)))
+(define name-more?  (make-name-predicate '(ll lu nd)))
 
 (define (signed-number-start? c)
   (case c
