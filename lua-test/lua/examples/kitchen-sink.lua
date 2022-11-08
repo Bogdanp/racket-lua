@@ -8,3 +8,5 @@
 'hi' "hello" "\\" "\"a"
 function do for while until end if elseif else then
 iffy funny forty whiley
+-5 +2.5 +.5 print(.5)
+1+25-3.0/4

@@ -89,19 +89,13 @@
      (make-token 'dotdotdot (read-string 3 in) '...)]
     [#\. #:when (equal? ".." (peek-string 2 0 in))
      (make-token 'op (read-string 2 in) '..)]
-    [#\.
+    [#\. #:when (not (number-digit? (peek-char in 1)))
      (make-token 'dot (read-string 1 in) '\.)]
 
     [(or #\' #\")
      (define-values (s v)
        (lua:read-string in))
      (make-token 'string s (string->bytes/utf-8 v))]
-
-    [(or #\- #\+)
-     #:when (number-digit-or-period? (peek-char in 1))
-     (define-values (s v)
-       (lua:read-number in))
-     (make-token 'number s v)]
 
     [(? number-start?)
      (define-values (s v)
