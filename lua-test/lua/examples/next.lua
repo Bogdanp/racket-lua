@@ -1,31 +1,31 @@
 #lang lua
 
-v, idx = next({})
-print(v, idx)
+idx, v = next({})
+print(idx, v)
 
 t = {1, 2, 3}
-v, idx = next(t)
-print(v, idx)
+idx, v = next(t)
+print(idx, v)
 
-v, idx = next(t, idx)
-print(v, idx)
+idx, v = next(t, idx)
+print(idx, v)
 
-v, idx = next(t, idx)
-print(v, idx)
+idx, v = next(t, idx)
+print(idx, v)
 
-v, idx = next(t, idx)
-print(v, idx)
+idx, v = next(t, idx)
+print(idx, v)
 
 local _, err = pcall(function()
-        v, idx = next(t, 50)
-        print(v, idx)
+        idx, v = next(t, 50)
+        print(idx, v)
 end)
 print(err)
 
 -- NOTE: Order not guaranteed so test may be flaky.
 local t = {a = 1, b = 2, c = 3}
-local k, idx = next(t)
+local idx, k = next(t)
 repeat
-    print(k, idx)
-    k, idx = next(t, idx)
+    print(idx, k)
+    idx, k = next(t, idx)
 until not idx
