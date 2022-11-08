@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "error.rkt"
+         "iter.rkt"
          "string.rkt"
          "table.rkt"
          "type.rkt")
@@ -18,6 +19,9 @@
      `(#"assert" . ,lua:assert)
      `(#"error" . ,lua:error)
      `(#"pcall" . ,lua:pcall)
+
+     ;; iter
+     `(#"next" . ,lua:next)
 
      ;; string
      `(#"print" . ,lua:print)

@@ -3,8 +3,8 @@
 (require (for-syntax racket/base
                      racket/syntax
                      syntax/parse)
-         "private/error.rkt"
          "private/env.rkt"
+         "private/error.rkt"
          "private/nil.rkt"
          "private/string.rkt"
          "private/table.rkt")

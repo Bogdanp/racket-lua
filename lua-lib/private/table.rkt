@@ -42,7 +42,9 @@
                                     (table-ref v)))))
 
 (define (table-set! t k v)
-  (hash-set! (table-ht t) k v))
+  (if (nil? v)
+      (hash-remove! (table-ht t) k)
+      (hash-set! (table-ht t) k v)))
 
 (define (table-keys t)
   (hash-keys (table-ht t)))

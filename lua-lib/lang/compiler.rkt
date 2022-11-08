@@ -226,7 +226,8 @@
               ...
               [va-var va-temp]
               ...)
-             stmt ...)))))]
+             stmt ...
+             (#%void))))))]
 
   [((Let ctxt vars exprs stmts))
    (let ([exprs (indexed exprs)])
@@ -242,7 +243,8 @@
            ([temp expr] ...)
            (#%let
              ([var temp] ...)
-             stmt ...)))))]
+             stmt ...
+             (#%void))))))]
 
   [((MethodDef ctxt names attr params block))
    (compile-statement
