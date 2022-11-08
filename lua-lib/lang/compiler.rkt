@@ -46,15 +46,19 @@
                             (add1 idx))))])
      (syntax/loc ctxt
        (#%let
-        ([attr-temp attr-exp] ...
-         [sub-lhs-temp sub-lhs-expr] ...
-         [sub-rhs-temp sub-rhs-expr] ...
-         [temp expr] ...
-         [#%t (#%apply #%table (#%adjust-va vararg-expr))])
-        (#%let
-         ([va-temp (#%table-ref #%t va-idx)] ...)
-         (#%set! var temp) ...
-         (#%set! va-var va-temp) ...))))]
+         ([attr-temp attr-exp]
+          ...
+          [sub-lhs-temp sub-lhs-expr]
+          ...
+          [sub-rhs-temp sub-rhs-expr]
+          ...
+          [temp expr]
+          ...
+          [#%t (#%apply #%table (#%adjust-va vararg-expr))])
+         (#%let
+           ([va-temp (#%table-ref #%t va-idx)] ...)
+           (#%set! var temp) ...
+           (#%set! va-var va-temp) ...))))]
 
   [((Assignment ctxt vars exprs))
    (let ([exprs (indexed exprs)])
@@ -72,11 +76,15 @@
                             (compile-expr* expr)))])
        (syntax/loc ctxt
          (#%let
-          ([attr-temp attr-expr] ...
-           [sub-lhs-temp sub-lhs-expr] ...
-           [sub-rhs-temp sub-rhs-expr] ...
-           [temp expr] ...)
-          (#%set! var temp) ...))))]
+           ([attr-temp attr-expr]
+            ...
+            [sub-lhs-temp sub-lhs-expr]
+            ...
+            [sub-rhs-temp sub-rhs-expr]
+            ...
+            [temp expr]
+            ...)
+           (#%set! var temp) ...))))]
 
   [((Break ctxt))
    (syntax/loc ctxt
@@ -99,16 +107,18 @@
                  [block (compile-block block)])
      (syntax/loc ctxt
        (#%let
-        ([#%init init-expr]
-         [#%limit limit-expr]
-         [#%step step-expr])
-        (#%when (== #%step 0) (#%error "for" "zero step"))
-        (#%let #%for ([name #%init])
-               (#%when
-                (#%cond [(< #%step 0) (>= name #%limit)]
-                        [(> #%step 0) (<= name #%limit)])
-                block
-                (#%for (+ name #%step)))))))]
+         ([#%init init-expr]
+          [#%limit limit-expr]
+          [#%step step-expr])
+         (#%when (== #%step 0)
+           (#%error "for" "zero step"))
+         (#%let #%for ([name #%init])
+           (#%when
+             (#%cond
+               [(< #%step 0) (>= name #%limit)]
+               [(> #%step 0) (<= name #%limit)])
+             block
+             (#%for (+ name #%step)))))))]
 
   [((FuncDef ctxt (? list? names) params block))
    (compile-statement
@@ -148,8 +158,8 @@
                  [else-block (compile-statement elseif-block)])
      (syntax/loc ctxt
        (#%cond
-        [cond-expr then-block nil]
-        [#%else else-block nil])))]
+         [cond-expr then-block nil]
+         [#%else else-block nil])))]
 
   [((If ctxt cond-expr then-block else-block))
    (with-syntax ([cond-expr (compile-expr* cond-expr)]
@@ -157,8 +167,8 @@
                  [else-block (compile-block else-block)])
      (syntax/loc ctxt
        (#%cond
-        [cond-expr then-block nil]
-        [#%else else-block nil])))]
+         [cond-expr then-block nil]
+         [#%else else-block nil])))]
 
   [((Label ctxt name))
    (with-syntax ([name (format-label-id name)])
@@ -182,13 +192,17 @@
                  [(stmt ...) (map compile-statement stmts)])
      (syntax/loc ctxt
        (#%let
-        ([temp expr] ...
-         [#%t (#%apply #%table (#%adjust-va vararg-expr))])
-        (#%let
-         ([va-temp (#%table-ref #%t va-idx)] ...)
+         ([temp expr]
+          ...
+          [#%t (#%apply #%table (#%adjust-va vararg-expr))])
          (#%let
-          ([var temp] ... [va-var va-temp] ...)
-          stmt ...)))))]
+           ([va-temp (#%table-ref #%t va-idx)] ...)
+           (#%let
+             ([var temp]
+              ...
+              [va-var va-temp]
+              ...)
+             stmt ...)))))]
 
   [((Let ctxt vars exprs stmts))
    (let ([exprs (indexed exprs)])
@@ -201,10 +215,10 @@
                    [(stmt ...) (map compile-statement stmts)])
        (syntax/loc ctxt
          (#%let
-          ([temp expr] ...)
-          (#%let
-           ([var temp] ...)
-           stmt ...)))))]
+           ([temp expr] ...)
+           (#%let
+             ([var temp] ...)
+             stmt ...)))))]
 
   [((MethodDef ctxt names attr params block))
    (compile-statement
@@ -233,7 +247,11 @@
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%let/ec #%break (#%let #%while () (#%when cond-expr block (#%while))))))])
+       (#%let/ec #%break
+         (#%let #%while ()
+           (#%when cond-expr
+             block
+             (#%while))))))])
 
 (define/match (compile-expr* e)
   [((or (Call ctxt _ _)
@@ -271,13 +289,15 @@
    (with-syntax ([(param ...) params]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%lambda ([param nil] ... . #%rest) (#%let/ec #%return block))))]
+       (#%lambda ([param nil] ... . #%rest)
+         (#%let/ec #%return block))))]
 
   [((Func ctxt params block))
    (with-syntax ([(param ...) params]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%lambda ([param nil] ...) (#%let/ec #%return block))))]
+       (#%lambda ([param nil] ...)
+         (#%let/ec #%return block))))]
 
   [((Subscript ctxt expr field-expr))
    (with-syntax ([expr (compile-expr* expr)]
