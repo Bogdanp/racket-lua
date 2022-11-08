@@ -47,7 +47,9 @@
   (table nil ht))
 
 (define (table-length t)
-  (apply max 0 (hash-keys (table-ht t))))
+  (define ints
+    (filter integer? (hash-keys (table-ht t))))
+  (apply max 0 ints))
 
 (define (table-meta-ref t k [default-proc (λ () nil)])
   (define res

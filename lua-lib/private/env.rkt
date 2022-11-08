@@ -1,7 +1,9 @@
 #lang racket/base
 
-(require "error.rkt"
+(require "equal.rkt"
+         "error.rkt"
          "iter.rkt"
+         "length.rkt"
          "string.rkt"
          "table.rkt"
          "type.rkt")
@@ -15,6 +17,9 @@
     (make-table
      `(#"_VERSION" . #"racket-lua 0.1")
 
+     ;; equal
+     `(#"rawequal" . ,lua:rawequal)
+
      ;; error
      `(#"assert" . ,lua:assert)
      `(#"error" . ,lua:error)
@@ -24,6 +29,9 @@
      `(#"next" . ,lua:next)
      `(#"pairs" . ,lua:pairs)
      `(#"ipairs" . ,lua:ipairs)
+
+     ;; length
+     `(#"rawlen" . ,lua:rawlen)
 
      ;; string
      `(#"print" . ,lua:print)

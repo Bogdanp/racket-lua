@@ -4,7 +4,9 @@
                      racket/syntax
                      syntax/parse)
          "private/env.rkt"
+         "private/equal.rkt"
          "private/error.rkt"
+         "private/length.rkt"
          "private/nil.rkt"
          "private/string.rkt"
          "private/table.rkt")
@@ -192,18 +194,6 @@
   [lua:>  > ]
   [lua:>= >=]))
 
-(define (lua:== a b)
-  (or (equal? a b)
-      (and (table? a)
-           (table? b)
-           (or (let ([eq (table-meta-ref a #"__eq")])
-                 (and (procedure? eq) (eq a b) #t))
-               (let ([eq (table-meta-ref b #"__eq")])
-                 (and (procedure? eq) (eq b a) #t))))))
-
-(define (lua:~= a b)
-  (not (lua:== a b)))
-
 (define-numeric-binop lua:<  <  <  < )
 (define-numeric-binop lua:<= <= <= <=)
 (define-numeric-binop lua:>  >  >  > )
@@ -225,15 +215,6 @@
 (provide
  (rename-out
   [lua:length #%length]))
-
-(define (lua:length v)
-  (cond
-    [(bytes? v)
-     (bytes-length v)]
-    [(table? v)
-     (table-length v)]
-    [else
-     (raise-argument-error "#" "a string or a table" v)]))
 
 
 ;; basics ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
