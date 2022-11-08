@@ -47,10 +47,8 @@
 
 (define (lua:ipairs t . _)
   (define (next s idx)
-    (cond
-      [(nil? idx)
-       (values nil nil)]
-      [else
-       (define next-idx (add1 idx))
-       (values (table-ref s next-idx) next-idx)]))
+    (define v (table-ref s (add1 idx)))
+    (if (nil? v)
+        (values nil nil)
+        (values (add1 idx) v)))
   (values next t 0))

@@ -45,10 +45,13 @@
     [(nil? res) (default-proc)]
     [else res]))
 
-(define (table-ref t k [default-proc (lambda ()
-                                       (nil~>
-                                        (table-meta-ref t #"__index")
-                                        (table-ref k)))])
+(define (table-ref t k [default-proc
+                         (lambda ()
+                           (define index (table-meta-ref t #"__index"))
+                           (cond
+                             [(table? index) (table-ref index k)]
+                             [(procedure? index) (index t k)]
+                             [else nil]))])
   (hash-ref (table-ht t) k default-proc))
 
 (define (table-set! t k v)
