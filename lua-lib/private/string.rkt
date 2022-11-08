@@ -18,14 +18,26 @@
       (format "<~a>" what)))
 
 (define (lua:tostring v . _)
-  (string->bytes/utf-8
-   (cond
-     [(eq? v #t) "true"]
-     [(eq? v #f) "false"]
-     [(eq? v nil) "nil"]
-     [(table? v) (->string "table" v)]
-     [(procedure? v) (->string "function" v)]
-     [else (~a v)])))
+  (define str
+    (cond
+      [(eq? v #t) "true"]
+      [(eq? v #f) "false"]
+      [(eq? v nil) "nil"]
+      [(table? v)
+       (define custom-tostring
+         (nil~>
+          (lua:getmetatable v)
+          (table-ref #"__tostring")))
+       (if (nil? custom-tostring)
+           (->string "table" v)
+           (custom-tostring v))]
+      [(procedure? v)
+       (->string "function" v)]
+      [else
+       (~a v)]))
+  (cond
+    [(bytes? str) str]
+    [else (string->bytes/utf-8 str)]))
 
 (define (lua:print . vs)
   (for ([i (in-naturals)]
