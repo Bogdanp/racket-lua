@@ -26,10 +26,12 @@
   [cond #%cond]
   [cons #%cons]
   [define #%define]
+  [dynamic-wind #%dynamic-wind]
   [else #%else]
   [lambda #%lambda]
   [let #%let]
   [let/ec #%let/ec]
+  [nil? #%nil?]
   [provide #%provide]
   [lua:error #%error]
   [lua:set! #%set!]
@@ -37,6 +39,7 @@
   [time #%time]
   [unless #%unless]
   [values #%values]
+  [void #%void]
   [when #%when]))
 
 (begin-for-syntax

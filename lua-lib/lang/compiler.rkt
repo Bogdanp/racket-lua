@@ -120,6 +120,27 @@
              block
              (#%for (+ name #%step)))))))]
 
+  [((ForIn ctxt names exprs block))
+   (define while-body
+     (list*
+      (Assignment ctxt names (list (Call ctxt '#%iter '(#%state #%control))))
+      (Assignment ctxt '(#%control) (list (car names)))
+      (If ctxt (Binop ctxt '== '#%control 'nil) (Block ctxt (list (Break ctxt))) #f)
+      (Block-stmts block)))
+   (define while-stmt
+     (While ctxt 'true (Block ctxt while-body)))
+   (define protect-stmt
+     (Protect
+      ctxt
+      (list)
+      (list while-stmt)
+      (list (If ctxt
+                (Binop ctxt '~= '#%closing 'nil)
+                (Block ctxt (list (Call ctxt '#%closing null)))
+                #f))))
+   (compile-statement
+    (Let ctxt '(#%iter #%state #%control #%closing) exprs (list protect-stmt)))]
+
   [((FuncDef ctxt (? list? names) params block))
    (compile-statement
     (Assignment ctxt
@@ -226,6 +247,16 @@
                 (list (Subscript ctxt (names->subscripts ctxt names) (symbol->bytes attr)))
                 (list (Func ctxt (cons 'self params) block))))]
 
+  [((Protect ctxt pre-stmts value-stmts post-stmts))
+   (with-syntax ([(pre-stmt ...) (map compile-statement pre-stmts)]
+                 [(value-stmt ...) (map compile-statement value-stmts)]
+                 [(post-stmt ...) (map compile-statement post-stmts)])
+     (syntax/loc ctxt
+       (#%dynamic-wind
+         (#%lambda () pre-stmt ... (#%void))
+         (#%lambda () value-stmt ... (#%void))
+         (#%lambda () post-stmt ... (#%void)))))]
+
   [((Repeat ctxt cond-expr block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
@@ -296,7 +327,7 @@
    (with-syntax ([(param ...) params]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%lambda ([param nil] ...)
+       (#%lambda ([param nil] ... . #%unused-rest)
          (#%let/ec #%return block))))]
 
   [((Subscript ctxt expr field-expr))

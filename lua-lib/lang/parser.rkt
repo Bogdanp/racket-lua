@@ -187,8 +187,27 @@
        (parse-block l))
      (begin0 (For ctxt name init-expr limit-expr step-expr block)
        (skip l 'keyword 'end))]
+    [(comma)
+     (skip l 'comma)
+     (define names (cons name (parse-names l)))
+     (skip l 'keyword 'in)
+     (define exprs (parse-exprs l))
+     (skip l 'keyword 'do)
+     (define block
+       (parse-block l))
+     (begin0 (ForIn ctxt names exprs block)
+       (skip l 'keyword 'end))]
+    [(keyword 'in)
+     (define names (list name))
+     (skip l 'keyword 'in)
+     (define exprs (parse-exprs l))
+     (skip l 'keyword 'do)
+     (define block
+       (parse-block l))
+     (begin0 (ForIn ctxt names exprs block)
+       (skip l 'keyword 'end))]
     [_
-     (expected "=" tok)]))
+     (expected "equals, comma or 'in' keyword" tok)]))
 
 (define (parse-if-block l [kwd 'if])
   (define ctxt (token-ctxt (expect l 'keyword kwd)))

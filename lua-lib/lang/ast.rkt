@@ -42,6 +42,7 @@
   [FieldExpr (expr value)]
   [FieldLit (name value)]
   [For (name initial-expr limit-expr step-expr block)]
+  [ForIn (names exprs block)]
   [Func (params block)]
   [FuncDef (name params block)]
   [Goto (label)]
@@ -57,4 +58,6 @@
   [Unop (name expr)]
   [While (cond-expr block)]
 
-  [Let (vars exprs stmts)])
+  ;; L1
+  [Let (vars exprs stmts)]
+  [Protect (pre-stmts value-stmts post-stmts)])
