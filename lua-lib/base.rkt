@@ -192,8 +192,15 @@
   [lua:>  > ]
   [lua:>= >=]))
 
-(define lua:==
-  (procedure-rename equal? '==))
+(define (lua:== a b)
+  (or (equal? a b)
+      (and (table? a)
+           (table? b)
+           (or (let ([eq (table-meta-ref a #"__eq")])
+                 (and (procedure? eq) (eq a b) #t))
+               (let ([eq (table-meta-ref b #"__eq")])
+                 (and (procedure? eq) (eq b a) #t))))))
+
 (define (lua:~= a b)
   (not (lua:== a b)))
 
