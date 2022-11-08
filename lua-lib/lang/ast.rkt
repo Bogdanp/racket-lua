@@ -60,4 +60,4 @@
 
   ;; L1
   [Let (vars exprs stmts)]
-  [Protect (pre-stmts value-stmts post-stmts)])
+  [Protect (value-stmts post-stmts)])
