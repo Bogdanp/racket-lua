@@ -158,9 +158,13 @@
           (expect l 'keyword 'end))]
        [_
         (define names (parse-names l))
-        (skip l 'op '=)
-        (define exprs (parse-exprs l))
-        (LocalAssignment ctxt names exprs)])]
+        (match (lexer-peek l)
+          [(op '=)
+           (skip l 'op '=)
+           (define exprs (parse-exprs l))
+           (LocalAssignment ctxt names exprs)]
+          [_
+           (LocalAssignment ctxt names null)])])]
     [tok
      (expected "statement" tok)]))
 
