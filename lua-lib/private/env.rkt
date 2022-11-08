@@ -23,6 +23,7 @@
      ;; iter
      `(#"next" . ,lua:next)
      `(#"pairs" . ,lua:pairs)
+     `(#"ipairs" . ,lua:ipairs)
 
      ;; string
      `(#"print" . ,lua:print)

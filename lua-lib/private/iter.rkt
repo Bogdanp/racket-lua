@@ -7,7 +7,8 @@
 
 (provide
  lua:next
- lua:pairs)
+ lua:pairs
+ lua:ipairs)
 
 (define (lua:next t [given-idx nil] . _)
   (unless (table? t)
@@ -38,3 +39,12 @@
 ;; TODO: __pairs
 (define (lua:pairs t . _)
   (values lua:next t nil))
+
+(define (lua:ipairs t . _)
+  (define (next t idx)
+    (cond
+      [(nil? idx) (values nil nil)]
+      [else
+       (define next-idx (add1 idx))
+       (values (table-ref t next-idx) next-idx)]))
+  (values next t 0))
