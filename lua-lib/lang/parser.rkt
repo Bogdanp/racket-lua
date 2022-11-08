@@ -512,11 +512,13 @@
     (skip l type)))
 
 (define (token-ctxt t)
+  (define str (token-str t))
   (define loc
     (vector
      (current-source-name)
      (token-line t)
      (token-col t)
      (token-pos t)
-     (string-length (token-str t))))
+     (and (string? str)
+          (string-length str))))
   (datum->syntax #f 'srcloc loc))
