@@ -36,11 +36,12 @@
   [lua:error #%error]
   [lua:set! #%set!]
   [lua:top #%top]
+  [lua:unless #%unless]
+  [lua:when #%when]
   [time #%time]
-  [unless #%unless]
+  [truthy? #%truthy?]
   [values #%values]
-  [void #%void]
-  [when #%when]))
+  [void #%void]))
 
 (begin-for-syntax
   (define (id-stx->bytes-stx stx)
@@ -65,6 +66,18 @@
      #:with name (id-stx->bytes-stx #'id)
      #:with env (format-id #'id "_ENV")
      #'(table-set! env name e)]))
+
+(define-syntax (lua:unless stx)
+  (syntax-parse stx
+    [(_ cond-expr body ...+)
+     #'(unless (falsy? cond-expr)
+         body ...)]))
+
+(define-syntax (lua:when stx)
+  (syntax-parse stx
+    [(_ cond-expr body ...+)
+     #'(when (truthy? cond-expr)
+         body ...)]))
 
 (define-syntax (#%subscript stx)
   (syntax-parse stx
@@ -171,7 +184,7 @@
  (rename-out
   [lua:and and]
   [lua:or or]
-  [lua:not #%unary-not]
+  [lua:not not]
   [lua:== ==]
   [lua:~= ~=]
   [lua:<  < ]

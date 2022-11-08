@@ -7,7 +7,8 @@
  nil?
  nil
  nil~>
- falsy?)
+ falsy?
+ truthy?)
 
 (define (nil? v)
   (eq? nil v))
@@ -23,3 +24,6 @@
 
 (define (falsy? v)
   (or (nil? v) (not v)))
+
+(define (truthy? v)
+  (and (not (nil? v)) v))

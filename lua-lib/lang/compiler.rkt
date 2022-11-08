@@ -126,7 +126,7 @@
       ctxt
       (list
        (While
-        ctxt 'true
+        ctxt #t
         (Block
          ctxt
          (list*
@@ -182,7 +182,7 @@
                  [else-block (compile-statement elseif-block)])
      (syntax/loc ctxt
        (#%cond
-         [cond-expr then-block nil]
+         [(#%truthy? cond-expr) then-block nil]
          [#%else else-block nil])))]
 
   [((If ctxt cond-expr then-block else-block))
@@ -191,7 +191,7 @@
                  [else-block (compile-block else-block)])
      (syntax/loc ctxt
        (#%cond
-         [cond-expr then-block nil]
+         [(#%truthy? cond-expr) then-block nil]
          [#%else else-block nil])))]
 
   [((Label ctxt name))

@@ -11,3 +11,10 @@ repeat
     print(i)
     break
 until false
+
+ok = true
+repeat
+    if not ok then
+        print("fail")
+    end
+until not ok

@@ -11,3 +11,7 @@ while i < 10 do
     print(i)
     break
 end
+
+while nil do
+    print("fail")
+end
