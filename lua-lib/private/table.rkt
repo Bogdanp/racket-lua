@@ -1,7 +1,11 @@
 #lang racket/base
 
-(require racket/match
+(require racket/lazy-require
+         racket/match
          "nil.rkt")
+
+(lazy-require
+ ["string.rkt" (lua:tostring)])
 
 (provide
  table?
@@ -16,7 +20,16 @@
  lua:setmetatable)
 
 (struct table ([meta #:mutable] ht)
-  #:transparent)
+  #:transparent
+  #:property prop:procedure
+  (lambda (self . args)
+    (define __call
+      (table-meta-ref self #"__call"))
+    (cond
+      [(procedure? __call)
+       (apply __call self args)]
+      [else
+       (error 'application "table ~a is not callable" (lua:tostring self))])))
 
 (define (make-table . args)
   (define ht (make-hash))
@@ -68,7 +81,7 @@
     (table-meta t))
   (cond
     [(nil? meta) nil]
-    [else (table-ref meta #"__metatable" meta)]))
+    [else (table-ref meta #"__metatable" (λ () meta))]))
 
 (define (lua:setmetatable t meta . _)
   (unless (table? meta)
