@@ -162,7 +162,7 @@
                  [(param ...) params]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%define (name [param nil] ... . #%unusable-rest) (#%let/ec #%return block))))]
+       (#%define (name [param nil] ... . #%unused-rest) (#%let/ec #%return block))))]
 
   ;; FIXME: goto needs to be able to jump forwards.
   [((Goto ctxt name))
