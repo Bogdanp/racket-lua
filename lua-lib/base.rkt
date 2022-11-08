@@ -193,10 +193,10 @@
   (if (nil? v) #t (not v)))
 
 (define-syntax-rule (lua:and a b)
-  (nil~> a (and b)))
+  (if (falsy? a) nil b))
 
 (define-syntax-rule (lua:or a b)
-  (if (nil? a) b (or a b)))
+  (if (falsy? a) b a))
 
 
 ;; length ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

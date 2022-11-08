@@ -6,7 +6,8 @@
 (provide
  nil?
  nil
- nil~>)
+ nil~>
+ falsy?)
 
 (define (nil? v)
   (eq? nil v))
@@ -19,3 +20,6 @@
     [(_ a) #'a]
     [(_ a (rator rand ...)) #'(if (nil? a) nil (rator a rand ...))]
     [(_ a b c ...) #'(nil~> (nil~> a b) c ...)]))
+
+(define (falsy? v)
+  (or (nil? v) (not v)))

@@ -1,10 +1,12 @@
 #lang racket/base
 
-(require "string.rkt")
+(require "nil.rkt"
+         "string.rkt")
 
 (provide
  lua:pcall
- lua:error)
+ lua:error
+ lua:assert)
 
 (struct exn:fail:lua exn:fail (value level))
 
@@ -16,3 +18,7 @@
 (define (lua:error v [level 1] . _)
   (define message (format "error: ~a" (lua:tostring v)))
   (raise (exn:fail:lua message (current-continuation-marks) v level)))
+
+(define (lua:assert v [message #"assertion failed!"] . _)
+  (when (falsy? v)
+    (lua:error message)))

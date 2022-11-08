@@ -9,6 +9,7 @@
  table-length
  table-ref
  table-set!
+ table-keys
 
  lua:getmetatable
  lua:setmetatable)
@@ -42,6 +43,9 @@
 
 (define (table-set! t k v)
   (hash-set! (table-ht t) k v))
+
+(define (table-keys t)
+  (hash-keys (table-ht t)))
 
 (define (lua:getmetatable t . _)
   (table-meta t))
