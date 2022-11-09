@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require "adjust.rkt"
-         "nil.rkt"
          "table.rkt")
 
 ;; operators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

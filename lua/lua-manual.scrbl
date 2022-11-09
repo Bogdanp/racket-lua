@@ -12,7 +12,8 @@
    (link "https://lua.org" text))
 
 This package provides a @hash-lang[] implementation of the
-@lua-anchor{Lua programming language}.
+@lua-anchor{Lua programming language}.  It is still a work in
+progress, but much of the core language is supported already.
 
 @section{Calling Lua from Racket}
 
@@ -41,6 +42,10 @@ You can use it from Racket like so:
 
 @section{Differences from Lua}
 @subsection{@tt{goto}}
+
+The @tt{goto} keyword may only be used to jump to labels defined
+within the dynamic extent of the @tt{goto} statement itself.  That is,
+you may not jump to labels ``in the future.''
 
 @subsection{Integers}
 

@@ -27,6 +27,7 @@
          (lambda (out)
            (parameterize ([current-global-environment (make-initial-environment)]
                           [current-print-ids? #f]
+                          [current-error-port (open-output-nowhere)]
                           [current-output-port out])
              (with-handlers ([exn:fail? (λ (e) (fail-check (format "~a: ~a" path (exn-message e))))])
                (dynamic-require `(file ,(path->string path)) #f))))))

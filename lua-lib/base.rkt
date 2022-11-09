@@ -14,8 +14,6 @@
          "private/relation.rkt"
          "private/table.rkt")
 
-;; kernel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (provide
  #%app
  #%datum
@@ -40,6 +38,7 @@
  nil
  (rename-out
   [current-global-environment #%global]
+  [load-standard-library! #%load-stdlib!]
   [lua:% %]
   [lua:& &]
   [lua:* *]

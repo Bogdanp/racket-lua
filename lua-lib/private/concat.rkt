@@ -30,6 +30,6 @@
        [(procedure? rhs-dunder-proc)
         (lua:adjust* (λ () (rhs-dunder-proc b a)))]
        [else
-        (lua:error "..: cannot concatenate ~a and ~a"
-                   (lua:tostring a)
-                   (lua:tostring b))])]))
+        (lua:error (format "..: cannot concatenate ~a and ~a"
+                           (lua:tostring a)
+                           (lua:tostring b)))])]))

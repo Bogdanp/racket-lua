@@ -15,10 +15,14 @@
     (quasisyntax/loc (Node-ctxt chunk)
       ((#%provide #%chunk)
        (#%define _ENV (#%global))
-       (#%define (#%chunk-proc . #%rest) (#%let/ec #%return block))
-       (#%define #%chunk #,(if execute?
-                               #'(#%adjust (#%chunk-proc))
-                               #'#%chunk-proc))))))
+       (#%load-stdlib! _ENV)
+       (#%define (#%chunk-proc . #%rest)
+         (#%let/ec #%return
+           block))
+       (#%define #%chunk
+         #,(if execute?
+               #'(#%adjust (#%chunk-proc))
+               #'#%chunk-proc))))))
 
 (define/match (compile-block _)
   [((Block ctxt stmts))

@@ -2,7 +2,6 @@
 
 (require (for-syntax racket/base
                      syntax/parse)
-         racket/math
          "adjust.rkt"
          "error.rkt"
          "string.rkt"

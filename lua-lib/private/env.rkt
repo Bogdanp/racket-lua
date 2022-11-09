@@ -1,12 +1,25 @@
 #lang racket/base
 
-(require "error.rkt"
+(require (for-syntax racket/base)
+         racket/runtime-path
+         "error.rkt"
          "iter.rkt"
          "length.rkt"
+         "number.rkt"
          "relation.rkt"
          "string.rkt"
          "table.rkt"
          "type.rkt")
+
+
+;; "foreign" access ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-runtime-module-path-index racket/base
+  'racket/base)
+
+(define (require-racket id-bytes)
+  (dynamic-require racket/base (string->symbol (bytes->string/utf-8 id-bytes))))
+
 
 ;; global environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; https://www.lua.org/manual/5.4/manual.html#2.2
@@ -16,38 +29,55 @@
  current-global-environment)
 
 (define (make-initial-environment)
+  (define arg
+    (apply make-table
+           (for/list ([arg (in-vector (current-command-line-arguments))])
+             (string->bytes/utf-8 arg))))
   (define env
     (make-table
      `(#"_VERSION" . #"racket-lua 0.1")
-
-     ;; equal
-     `(#"rawequal" . ,lua:rawequal)
-
-     ;; error
+     `(#"arg" . ,arg)
      `(#"assert" . ,lua:assert)
      `(#"error" . ,lua:error)
-     `(#"pcall" . ,lua:pcall)
-
-     ;; iter
+     `(#"getmetatable" . ,lua:getmetatable)
+     `(#"ipairs" . ,lua:ipairs)
      `(#"next" . ,lua:next)
      `(#"pairs" . ,lua:pairs)
-     `(#"ipairs" . ,lua:ipairs)
-
-     ;; length
-     `(#"rawlen" . ,lua:rawlen)
-
-     ;; string
+     `(#"pcall" . ,lua:pcall)
      `(#"print" . ,lua:print)
-     `(#"tostring" . ,lua:tostring)
-
-     ;; table
-     `(#"getmetatable" . ,lua:getmetatable)
+     `(#"rawequal" . ,lua:rawequal)
+     `(#"rawlen" . ,lua:rawlen)
+     `(#"require_racket" . ,require-racket)
      `(#"setmetatable" . ,lua:setmetatable)
-
-     ;; type
+     `(#"tonumber" . ,lua:tonumber)
+     `(#"tostring" . ,lua:tostring)
      `(#"type" . ,lua:type)))
   (begin0 env
     (table-set! env #"_G" env)))
 
 (define current-global-environment
   (make-parameter (make-initial-environment)))
+
+
+;; stdlib ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ current-standard-library-modules
+ load-standard-library!)
+
+(define-runtime-module-path-index file.lua "../stdlib/file.lua")
+(define-runtime-module-path-index io.lua   "../stdlib/io.lua")
+
+(define current-standard-library-modules
+  (make-parameter
+   (list
+    `(#"file" . ,file.lua)
+    `(#"io"   . ,io.lua))))
+
+(define (load-standard-library! env)
+  (for ([p (in-list (current-standard-library-modules))])
+    (define name (car p))
+    (define path (cdr p))
+    (parameterize ([current-standard-library-modules null]
+                   [current-global-environment env])
+      (table-set! env name (dynamic-require path '#%chunk)))))
