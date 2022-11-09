@@ -6,10 +6,8 @@
 
 (provide
  lua-value/c
-
- nil?
  nil
-
+ nil?
  table?
  (contract-out
   [make-table (-> (or/c lua-value/c (cons/c lua-value/c lua-value/c)) ... table?)]
