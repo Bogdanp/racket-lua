@@ -95,7 +95,7 @@
     [(or #\' #\")
      (define-values (s v)
        (lua:read-string in))
-     (make-token 'string s (string->bytes/utf-8 v))]
+     (make-token 'string s v)]
 
     [(? number-start?)
      (define-values (s v)
@@ -207,19 +207,6 @@
 (define-λcase number-digit?
   [(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-digit?])
 
-(define-λcase string-start?
-  [(#\') (string-more? #\')]
-  [(#\") (string-more? #\")])
-
-(define ((string-more? quote-c) c)
-  (when (eof-object? c)
-    (error "unexpected EOF while reading string"))
-
-  (cond
-    [(eqv? c quote-c) (λ (_) #f)]
-    [(eqv? c #\\) (λ (_) (string-more? quote-c))]
-    [else (string-more? quote-c)]))
-
 
 ;; readers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,7 +223,34 @@
 (define lua:read-number
   (make-reader signed-number-start? string->number))
 
-(define lua:read-string
-  (make-reader
-   string-start?
-   (λ (s) (substring s 1 (sub1 (string-length s))))))
+(define (lua:read-string in)
+  (define quote-char (read-char in))
+  (define str
+    (with-output-to-string
+      (lambda ()
+        (write-char quote-char)
+        (let loop ([escaped? #f])
+          (define char
+            (read-char in))
+          (cond
+            [escaped?
+             (write-char (lua:string-escape char))
+             (loop #f)]
+            [(eqv? char #\\)
+             (loop #t)]
+            [else
+             (write-char char)
+             (unless (eqv? char quote-char)
+               (loop #f))])))))
+  (define bs
+    (string->bytes/utf-8
+     (substring str 1 (sub1 (string-length str)))))
+  (values str bs))
+
+(define (lua:string-escape chr)
+  (case chr
+    [(#\\) #\\]
+    [(#\r) #\return]
+    [(#\n) #\newline]
+    [(#\t) #\tab]
+    [else chr]))
