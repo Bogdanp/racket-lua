@@ -10,12 +10,15 @@
 (provide
  compile-chunk)
 
-(define (compile-chunk chunk)
+(define (compile-chunk chunk [execute? #t])
   (with-syntax ([block (compile-block chunk)])
-    #'((#%provide #%chunk)
+    (quasisyntax/loc (Node-ctxt chunk)
+      ((#%provide #%chunk)
        (#%define _ENV (#%global))
        (#%define (#%chunk-proc . #%rest) (#%let/ec #%return block))
-       (#%define #%chunk (#%adjust (#%chunk-proc))))))
+       (#%define #%chunk #,(if execute?
+                               #'(#%adjust (#%chunk-proc))
+                               #'#%chunk-proc))))))
 
 (define/match (compile-block _)
   [((Block ctxt stmts))
@@ -163,7 +166,6 @@
      (syntax/loc ctxt
        (#%define (name [param nil] ... . #%unused-rest) (#%let/ec #%return block))))]
 
-  ;; FIXME: goto needs to be able to jump forwards.
   [((Goto ctxt name))
    (with-syntax ([name (format-label-id name)])
      (syntax/loc ctxt
