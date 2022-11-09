@@ -110,13 +110,12 @@
          ([#%init init-expr]
           [#%limit limit-expr]
           [#%step step-expr])
-         (#%when (== #%step 0)
-           (#%error "for" "zero step"))
          (#%let #%for ([name #%init])
            (#%when
              (#%cond
                [(< #%step 0) (>= name #%limit)]
-               [(> #%step 0) (<= name #%limit)])
+               [(> #%step 0) (<= name #%limit)]
+               [#%else (#%error "for: zero step")])
              block
              (#%for (+ name #%step)))))))]
 
@@ -182,7 +181,7 @@
                  [else-block (compile-statement elseif-block)])
      (syntax/loc ctxt
        (#%cond
-         [(#%truthy? cond-expr) then-block nil]
+         [cond-expr then-block nil]
          [#%else else-block nil])))]
 
   [((If ctxt cond-expr then-block else-block))
@@ -191,7 +190,7 @@
                  [else-block (compile-block else-block)])
      (syntax/loc ctxt
        (#%cond
-         [(#%truthy? cond-expr) then-block nil]
+         [cond-expr then-block nil]
          [#%else else-block nil])))]
 
   [((Label ctxt name))
@@ -294,11 +293,11 @@
    (with-syntax ([expr (compile-expr e)])
      (syntax/loc ctxt
        (#%adjust expr)))]
+
   [(_)
    (compile-expr e)])
 
 (define/match (compile-expr e)
-  [('nil)         (datum->syntax #f e)]
   [((? boolean?)) (datum->syntax #f e)]
   [((? number?))  (datum->syntax #f e)]
   [((? bytes?))   (datum->syntax #f e)]
@@ -357,7 +356,7 @@
      (syntax/loc ctxt
        (unop expr)))])
 
-(define/match (compile-call e)
+(define/match (compile-call _e)
   [((CallMethod ctxt target-expr attr arg-exprs))
    (define subscript-expr (Subscript ctxt '#%instance (symbol->bytes attr)))
    (with-syntax ([target-expr (compile-expr* target-expr)]
@@ -378,7 +377,7 @@
      (syntax/loc ctxt
        (rator-expr rand-expr ...)))])
 
-(define/match (compile-field e)
+(define/match (compile-field _e)
   [((Field ctxt expr))
    (with-syntax ([expr (compile-expr* expr)])
      (syntax/loc ctxt

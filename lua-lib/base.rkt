@@ -14,18 +14,13 @@
 ;; kernel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- #%adjust
- #%adjust-va
  #%app
  #%datum
- #%subscript
- #%va-args
  (rename-out
   [#%plain-module-begin #%module-begin]
   [apply #%apply]
   [begin #%begin]
   [call/cc #%call/cc]
-  [cond #%cond]
   [cons #%cons]
   [define #%define]
   [dynamic-wind #%dynamic-wind]
@@ -33,17 +28,23 @@
   [lambda #%lambda]
   [let #%let]
   [let/ec #%let/ec]
-  [nil? #%nil?]
   [provide #%provide]
-  [lua:error #%error]
-  [lua:set! #%set!]
-  [lua:top #%top]
-  [lua:unless #%unless]
-  [lua:when #%when]
   [time #%time]
   [truthy? #%truthy?]
   [values #%values]
-  [void #%void]))
+  [void #%void])
+
+ (rename-out
+  [lua:adjust #%adjust]
+  [lua:adjust-va #%adjust-va]
+  [lua:cond #%cond]
+  [lua:error #%error]
+  [lua:set! #%set!]
+  [lua:subscript #%subscript]
+  [lua:top #%top]
+  [lua:unless #%unless]
+  [lua:va-args #%va-args]
+  [lua:when #%when]))
 
 (begin-for-syntax
   (define (id-stx->bytes-stx stx)
@@ -54,12 +55,12 @@
     [(_ . id:id)
      #:with name (id-stx->bytes-stx #'id)
      #:with env (format-id #'id "_ENV")
-     #'(#%subscript env name)]))
+     #'(lua:subscript env name)]))
 
 (define-syntax (lua:set! stx)
   (syntax-parse stx
-    #:literals (#%subscript)
-    [(_ (#%subscript t:expr k:expr) v:expr)
+    #:literals (lua:subscript)
+    [(_ (lua:subscript t:expr k:expr) v:expr)
      #'(table-set! t k v)]
     [(_ id:id e:expr)
      #:when (identifier-binding #'id)
@@ -68,6 +69,15 @@
      #:with name (id-stx->bytes-stx #'id)
      #:with env (format-id #'id "_ENV")
      #'(table-set! env name e)]))
+
+(define-syntax (lua:cond stx)
+  (syntax-parse stx
+    #:literals (else)
+    [(_ [test-expr body-expr ...+] ...
+        [else else-body-expr ...+])
+     #'(cond
+         [(truthy? test-expr) body-expr ...] ...
+         [else else-body-expr ...])]))
 
 (define-syntax (lua:unless stx)
   (syntax-parse stx
@@ -81,27 +91,27 @@
      #'(when (truthy? cond-expr)
          body ...)]))
 
-(define-syntax (#%subscript stx)
+(define-syntax (lua:subscript stx)
   (syntax-parse stx
     [(_ t:expr k:expr)
      #'(table-ref t k)]))
 
-(define-syntax (#%adjust stx)
+(define-syntax (lua:adjust stx)
   (syntax-parse stx
     [(_ e)
      #'(call-with-values
         (lambda () e)
         (lambda vals (if (null? vals) nil (car vals))))]))
 
-(define-syntax (#%adjust-va stx)
+(define-syntax (lua:adjust-va stx)
   (syntax-parse stx
     [(_ e)
      #'(call-with-values (lambda () e) list)]))
 
-(define-syntax (#%va-args stx)
+(define-syntax (lua:va-args stx)
   (syntax-parse stx
-    [(#%va-args)
-     #:with #%rest (format-id #'#%va-args "#%rest")
+    [(_)
+     #:with #%rest (format-id stx "#%rest")
      #'(apply values #%rest)]))
 
 
