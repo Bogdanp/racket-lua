@@ -2,13 +2,12 @@
 
 (require "table.rkt")
 
+;; operators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; https://www.lua.org/manual/5.4/manual.html#3.4.4
+
 (provide
- lua:rawequal
  lua:==
  lua:~=)
-
-(define (lua:rawequal a b . _)
-  (equal? a b))
 
 (define (lua:== a b)
   (or (lua:rawequal a b)
@@ -21,3 +20,12 @@
 
 (define (lua:~= a b)
   (not (lua:== a b)))
+
+
+;; procedures ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ lua:rawequal)
+
+(define (lua:rawequal a b . _)
+  (equal? a b))

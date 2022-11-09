@@ -3,11 +3,13 @@
 (require (for-syntax racket/base
                      racket/syntax
                      syntax/parse)
+         "private/adjust.rkt"
          "private/env.rkt"
-         "private/equal.rkt"
          "private/error.rkt"
          "private/length.rkt"
+         "private/logic.rkt"
          "private/nil.rkt"
+         "private/relation.rkt"
          "private/string.rkt"
          "private/table.rkt")
 
@@ -34,17 +36,27 @@
   [values #%values]
   [void #%void])
 
+ nil
  (rename-out
+  [current-global-environment #%global]
+  [lua:== ==]
   [lua:adjust #%adjust]
   [lua:adjust-va #%adjust-va]
+  [lua:and and]
   [lua:cond #%cond]
   [lua:error #%error]
+  [lua:length #%length]
+  [lua:not not]
+  [lua:or or]
   [lua:set! #%set!]
   [lua:subscript #%subscript]
   [lua:top #%top]
   [lua:unless #%unless]
   [lua:va-args #%va-args]
-  [lua:when #%when]))
+  [lua:when #%when]
+  [lua:~= ~=]
+  [make-table #%table]
+  [table-ref #%table-ref]))
 
 (begin-for-syntax
   (define (id-stx->bytes-stx stx)
@@ -98,29 +110,17 @@
 
 (define-syntax (lua:adjust stx)
   (syntax-parse stx
-    [(_ e)
-     #'(call-with-values
-        (lambda () e)
-        (lambda vals (if (null? vals) nil (car vals))))]))
+    [(_ e) #'(lua:adjust* (λ () e))]))
 
 (define-syntax (lua:adjust-va stx)
   (syntax-parse stx
-    [(_ e)
-     #'(call-with-values (lambda () e) list)]))
+    [(_ e) #'(lua:adjust-va* (λ () e))]))
 
 (define-syntax (lua:va-args stx)
   (syntax-parse stx
     [(_)
      #:with #%rest (format-id stx "#%rest")
      #'(apply values #%rest)]))
-
-
-;; global environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; https://www.lua.org/manual/5.4/manual.html#2.2
-
-(provide
- (rename-out
-  [current-global-environment #%global]))
 
 
 ;; arithmetic operators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -194,11 +194,6 @@
 
 (provide
  (rename-out
-  [lua:and and]
-  [lua:or or]
-  [lua:not not]
-  [lua:== ==]
-  [lua:~= ~=]
   [lua:<  < ]
   [lua:<= <=]
   [lua:>  > ]
@@ -209,28 +204,11 @@
 (define-numeric-binop lua:>  >  >  > )
 (define-numeric-binop lua:>= >= >= >=)
 
-(define (lua:not v)
-  (if (nil? v) #t (not v)))
-
-(define-syntax-rule (lua:and a b)
-  (if (falsy? a) nil b))
-
-(define-syntax-rule (lua:or a b)
-  (if (falsy? a) b a))
-
-
-;; length ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; https://www.lua.org/manual/5.4/manual.html#3.4.7
-
-(provide
- (rename-out
-  [lua:length #%length]))
 
 
 ;; basics ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- nil
  (rename-out
   [concat ..]))
 
@@ -238,11 +216,3 @@
   (bytes-append
    (lua:tostring a)
    (lua:tostring b)))
-
-
-;; tables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(provide
- (rename-out
-  [make-table #%table]
-  [table-ref #%table-ref]))

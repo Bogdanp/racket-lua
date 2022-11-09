@@ -1,12 +1,15 @@
 #lang racket/base
 
-(require "equal.rkt"
-         "error.rkt"
+(require "error.rkt"
          "iter.rkt"
          "length.rkt"
+         "relation.rkt"
          "string.rkt"
          "table.rkt"
          "type.rkt")
+
+;; global environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; https://www.lua.org/manual/5.4/manual.html#2.2
 
 (provide
  make-initial-environment

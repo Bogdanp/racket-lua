@@ -1,10 +1,14 @@
 #lang racket/base
 
-(require "table.rkt")
+(require "adjust.rkt"
+         "nil.rkt"
+         "table.rkt")
+
+;; operators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; https://www.lua.org/manual/5.4/manual.html#3.4.7
 
 (provide
- lua:length
- lua:rawlen)
+ lua:length)
 
 (define (lua:length v)
   (cond
@@ -14,10 +18,16 @@
      (define __len
        (table-meta-ref v #"__len"))
      (if (procedure? __len)
-         (__len v)
+         (lua:adjust* (λ () (__len v)))
          (table-length v))]
     [else
      (raise-argument-error "#" "a string or a table" v)]))
+
+
+;; procedures ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ lua:rawlen)
 
 (define (lua:rawlen v . _)
   (cond
