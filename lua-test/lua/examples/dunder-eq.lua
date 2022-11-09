@@ -18,6 +18,7 @@ print(a == c)
 print(c == a)
 
 function Record:__eq(other)
+    print("eq called on:", self.value)
     return self.id == other.id
 end
 print(a == b)

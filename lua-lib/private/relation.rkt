@@ -13,10 +13,12 @@
   (or (lua:rawequal a b)
       (and (table? a)
            (table? b)
-           (or (let ([eq (table-meta-ref a #"__eq")])
-                 (and (procedure? eq) (eq a b) #t))
-               (let ([eq (table-meta-ref b #"__eq")])
-                 (and (procedure? eq) (eq b a) #t))))))
+           (let ([lhs-eq (table-meta-ref a #"__eq")]
+                 [rhs-eq (table-meta-ref a #"__eq")])
+             (cond
+               [(procedure? lhs-eq) (and (lhs-eq a b) #t)]
+               [(procedure? rhs-eq) (and (rhs-eq b a) #t)]
+               [else #f])))))
 
 (define (lua:~= a b)
   (not (lua:== a b)))
