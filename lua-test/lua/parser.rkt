@@ -83,7 +83,7 @@
 
      (check-parse "print(not true)" (Block ((Call print ((Unop not #t))))))
      (check-parse "print(#table)" (Block ((Call print ((Unop #%length table))))))
-     (check-parse "print(~42)" (Block ((Call print ((Unop #%bitwise-not 42))))))
+     (check-parse "print(~42)" (Block ((Call print ((Unop #%bnegate 42))))))
      (check-parse
       "print(not true and false)"
       (Block
@@ -99,11 +99,11 @@
      (check-parse
       "print(~x^2)"
       (Block
-       ((Call print ((Unop #%bitwise-not (Binop ^ x 2)))))))
+       ((Call print ((Unop #%bnegate (Binop ^ x 2)))))))
      (check-parse
       "print(~x^2 + 3)"
       (Block
-       ((Call print ((Binop + (Unop #%bitwise-not (Binop ^ x 2)) 3)))))))
+       ((Call print ((Binop + (Unop #%bnegate (Binop ^ x 2)) 3)))))))
 
     (test-suite
      "binary ops"

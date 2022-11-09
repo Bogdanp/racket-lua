@@ -67,7 +67,7 @@
     [(not)             9] ; unary
     [(#%length)        9] ; unary
     [(#%negate)        9] ; unary
-    [(#%bitwise-not)   9] ; unary
+    [(#%bnegate)       9] ; unary
     [(^)               10]
     [else
      (raise-argument-error 'precedence "an operator" id)]))
@@ -349,7 +349,7 @@
     (case id
       [(not) 'not]
       [(\#) '#%length]
-      [(~) '#%bitwise-not]
+      [(~) '#%bnegate]
       [(-) '#%negate]
       [else (error 'parse-unary-expr "bad id: ~a" id)]))
   (define tok (expect l 'op id))
