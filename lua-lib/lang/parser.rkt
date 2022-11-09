@@ -66,7 +66,7 @@
     [(* / // %)        8]
     [(not)             9] ; unary
     [(#%length)        9] ; unary
-    [(#%unary-minus)   9] ; unary
+    [(#%negate)        9] ; unary
     [(#%bitwise-not)   9] ; unary
     [(^)               10]
     [else
@@ -350,7 +350,7 @@
       [(not) 'not]
       [(\#) '#%length]
       [(~) '#%bitwise-not]
-      [(-) '#%unary-minus]
+      [(-) '#%negate]
       [else (error 'parse-unary-expr "bad id: ~a" id)]))
   (define tok (expect l 'op id))
   (define prec (precedence op))

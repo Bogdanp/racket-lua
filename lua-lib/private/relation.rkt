@@ -1,6 +1,11 @@
 #lang racket/base
 
-(require "table.rkt")
+(require (for-syntax racket/base
+                     syntax/parse)
+         "adjust.rkt"
+         "error.rkt"
+         "string.rkt"
+         "table.rkt")
 
 ;; operators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; https://www.lua.org/manual/5.4/manual.html#3.4.4
@@ -22,6 +27,59 @@
 
 (define (lua:~= a b)
   (not (lua:== a b)))
+
+(define ((make-binop who dunder-name number-proc string-proc) a b)
+  (cond
+    [(and
+      (number? a)
+      (number? b))
+     (number-proc a b)]
+    [(and
+      (bytes? a)
+      (bytes? b))
+     (string-proc a b)]
+    [(and dunder-name
+          (or (table? a)
+              (table? b)))
+     (define lhs-dunder-proc (and (table? a) (table-meta-ref a dunder-name)))
+     (define rhs-dunder-proc (and (table? b) (table-meta-ref b dunder-name)))
+     (cond
+       [(procedure? lhs-dunder-proc)
+        (lua:adjust* (λ () (lhs-dunder-proc a b)))]
+       [(procedure? rhs-dunder-proc)
+        (lua:adjust* (λ () (rhs-dunder-proc b a)))]
+       [else
+        (lua:error (format "~a: expected two numbers or two strings, received ~a and ~a")
+                   who
+                   (lua:tostring a)
+                   (lua:tostring b))])]
+    [else
+     (lua:error (format "~a: expected two numbers or two strings, received ~a and ~a")
+                who
+                (lua:tostring a)
+                (lua:tostring b))]))
+
+(define-syntax (define-binop stx)
+  (syntax-parse stx
+    [(_ id:id who:string dunder-name:expr integer-proc:expr string-proc:expr)
+     #'(begin
+         (provide id)
+         (define id (make-binop 'who dunder-name integer-proc string-proc)))]))
+
+(define-syntax-rule (define-binops [def ...] ...)
+  (begin (define-binop def ...) ...))
+
+(define (bytes<=? a b)
+  (or (bytes=? a b) (bytes<? a b)))
+
+(define (bytes>=? a b)
+  (or (bytes=? a b) (bytes>? a b)))
+
+(define-binops
+  [lua:<  "<"  #"__lt" <  bytes<?]
+  [lua:>  ">"  #f      >  bytes>?]
+  [lua:<= "<=" #"__le" <= bytes<=?]
+  [lua:>= ">=" #f      >= bytes>=?])
 
 
 ;; procedures ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
