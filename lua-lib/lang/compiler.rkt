@@ -247,6 +247,16 @@
              stmt ...
              (#%void))))))]
 
+  [((LetFunction ctxt name params block stmts))
+   (with-syntax ([name name]
+                 [func-expr (compile-expr (Func ctxt params block))]
+                 [(stmt ...) (map compile-statement stmts)])
+     (syntax/loc ctxt
+       (#%let ([name nil])
+         (#%set! name func-expr)
+         stmt ...
+         (#%void))))]
+
   [((MethodDef ctxt names attr params block))
    (compile-statement
     (Assignment ctxt
@@ -413,8 +423,7 @@
        (define node (Let ctxt names exprs (Lua->L1 stmts)))
        (reverse (cons node res))]
       [(cons (LocalFunction ctxt name params block) stmts)
-       (define func (Func ctxt params block))
-       (define node (Let ctxt (list name) (list func) (Lua->L1 stmts)))
+       (define node (LetFunction ctxt name params block (Lua->L1 stmts)))
        (reverse (cons node res))]
       [(cons stmt stmts)
        (loop (cons stmt res) stmts)])))

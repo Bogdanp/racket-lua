@@ -60,4 +60,5 @@
 
   ;; L1
   [Let (vars exprs stmts)]
+  [LetFunction (name params block stmts)]
   [Protect (value-stmts post-stmts)])
