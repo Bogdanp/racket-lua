@@ -1,6 +1,8 @@
 #lang racket/base
 
 (require "adjust.rkt"
+         "error.rkt"
+         "string.rkt"
          "table.rkt")
 
 ;; operators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -20,7 +22,7 @@
          (lua:adjust* (λ () (__len v)))
          (table-length v))]
     [else
-     (raise-argument-error "#" "a string or a table" v)]))
+     (lua:error "#: expected a string or a table, received ~a" (lua:tostring v))]))
 
 
 ;; procedures ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -35,4 +37,4 @@
     [(table? v)
      (table-length v)]
     [else
-     (raise-argument-error "rawlen" "a string or a table" v)]))
+     (lua:error "rawlen: expected a string or a table, received ~a" (lua:tostring v))]))
