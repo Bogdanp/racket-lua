@@ -14,10 +14,18 @@
 
 ;; "foreign" access ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(provide
+ current-racket-imports-enabled?)
+
+(define current-racket-imports-enabled?
+  (make-parameter #f))
+
 (define-runtime-module-path-index racket/base
   'racket/base)
 
 (define (require-racket id-bytes)
+  (unless (current-racket-imports-enabled?)
+    (lua:error "require_racket disabled"))
   (dynamic-require racket/base (string->symbol (bytes->string/utf-8 id-bytes))))
 
 
@@ -67,17 +75,22 @@
 
 (define-runtime-module-path-index file.lua "../stdlib/file.lua")
 (define-runtime-module-path-index io.lua   "../stdlib/io.lua")
+(define-runtime-module-path-index string.lua "../stdlib/string.lua")
+(define-runtime-module-path-index table.lua "../stdlib/table.lua")
 
 (define current-standard-library-modules
   (make-parameter
    (list
-    `(#"file" . ,file.lua)
-    `(#"io"   . ,io.lua))))
+    `(#"file"   . ,file.lua)
+    `(#"io"     . ,io.lua)
+    `(#"string" . ,string.lua)
+    `(#"table"  . ,table.lua))))
 
 (define (load-standard-library! env)
   (for ([p (in-list (current-standard-library-modules))])
     (define name (car p))
     (define path (cdr p))
-    (parameterize ([current-standard-library-modules null]
+    (parameterize ([current-racket-imports-enabled? #t]
+                   [current-standard-library-modules null]
                    [current-global-environment env])
       (table-set! env name (dynamic-require path '#%chunk)))))

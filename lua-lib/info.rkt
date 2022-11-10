@@ -5,4 +5,6 @@
 (define deps '("base"))
 (define compile-include-files
   '("stdlib/io.lua"
-    "stdlib/file.lua"))
+    "stdlib/file.lua"
+    "stdlib/string.lua"
+    "stdlib/table.lua"))
