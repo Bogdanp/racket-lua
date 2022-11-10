@@ -113,18 +113,19 @@
                  [step-expr (compile-expr step-expr)]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%let
-         ([#%init init-expr]
-          [#%limit limit-expr]
-          [#%step step-expr])
-         (#%let #%for ([name #%init])
-           (#%when
-             (#%cond
-               [(< #%step 0) (>= name #%limit)]
-               [(> #%step 0) (<= name #%limit)]
-               [#%else (#%error "for: zero step")])
-             block
-             (#%for (+ name #%step)))))))]
+       (#%let/ec #%break
+         (#%let
+           ([#%init init-expr]
+            [#%limit limit-expr]
+            [#%step step-expr])
+           (#%let #%for ([name #%init])
+             (#%when
+               (#%cond
+                 [(< #%step 0) (>= name #%limit)]
+                 [(> #%step 0) (<= name #%limit)]
+                 [#%else (#%error "for: zero step")])
+               block
+               (#%for (+ name #%step))))))))]
 
   [((ForIn ctxt names exprs block))
    (define protect-stmt
