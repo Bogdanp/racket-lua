@@ -17,7 +17,7 @@
        (#%define _ENV (#%global))
        (#%load-stdlib! _ENV)
        (#%define (#%chunk-proc . #%rest)
-         (#%let/ec #%return
+         (#%let/cc #%return
            block))
        (#%define #%chunk
          #,(if execute?
@@ -113,7 +113,7 @@
                  [step-expr (compile-expr step-expr)]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%let/ec #%break
+       (#%let/cc #%break
          (#%let
            ([#%init init-expr]
             [#%limit limit-expr]
@@ -162,14 +162,14 @@
                  [(param ...) params]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%define (name [param nil] ... . #%rest) (#%let/ec #%return block))))]
+       (#%define (name [param nil] ... . #%rest) (#%let/cc #%return block))))]
 
   [((FuncDef ctxt name params block))
    (with-syntax ([name name]
                  [(param ...) params]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%define (name [param nil] ... . #%unused-rest) (#%let/ec #%return block))))]
+       (#%define (name [param nil] ... . #%unused-rest) (#%let/cc #%return block))))]
 
   [((Goto ctxt name))
    (with-syntax ([name (format-label-id name)])
@@ -219,7 +219,7 @@
                                [var (in-list (drop vars start))])
                       (define temp (format-id #f "#%temp~a" idx))
                       (list var temp (add1 idx))))]
-                 [(stmt ...) (map compile-statement stmts)])
+                 [(stmt ...) (maybe-void (map compile-statement stmts))])
      (syntax/loc ctxt
        (#%let
          ([temp expr]
@@ -232,8 +232,7 @@
               ...
               [va-var va-temp]
               ...)
-             stmt ...
-             (#%void))))))]
+             stmt ...)))))]
 
   [((Let ctxt vars exprs stmts))
    (let ([exprs (indexed exprs)])
@@ -243,24 +242,22 @@
                       (define temp (format-id #f "#%temp~a" idx))
                       (define expr (hash-ref exprs idx 'nil))
                       (list temp var (compile-expr* expr)))]
-                   [(stmt ...) (map compile-statement stmts)])
+                   [(stmt ...) (maybe-void (map compile-statement stmts))])
        (syntax/loc ctxt
          (#%let
            ([temp expr] ...)
            (#%let
              ([var temp] ...)
-             stmt ...
-             (#%void))))))]
+             stmt ...)))))]
 
   [((LetFunction ctxt name params block stmts))
    (with-syntax ([name name]
                  [func-expr (compile-expr (Func ctxt params block))]
-                 [(stmt ...) (map compile-statement stmts)])
+                 [(stmt ...) (maybe-void (map compile-statement stmts))])
      (syntax/loc ctxt
        (#%let ([name nil])
          (#%set! name func-expr)
-         stmt ...
-         (#%void))))]
+         stmt ...)))]
 
   [((MethodDef ctxt names attr params block))
    (compile-statement
@@ -269,19 +266,19 @@
                 (list (Func ctxt (cons 'self params) block))))]
 
   [((Protect ctxt value-stmts post-stmts))
-   (with-syntax ([(value-stmt ...) (map compile-statement value-stmts)]
-                 [(post-stmt ...) (map compile-statement post-stmts)])
+   (with-syntax ([(value-stmt ...) (maybe-void (map compile-statement value-stmts))]
+                 [(post-stmt ...) (maybe-void (map compile-statement post-stmts))])
      (syntax/loc ctxt
        (#%dynamic-wind
          #%void
-         (#%lambda () value-stmt ... (#%void))
-         (#%lambda () post-stmt ... (#%void)))))]
+         (#%lambda () value-stmt ...)
+         (#%lambda () post-stmt ...))))]
 
   [((Repeat ctxt cond-expr block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%let/ec #%break (#%let #%repeat () block (#%unless cond-expr (#%repeat))))))]
+       (#%let/cc #%break (#%let #%repeat () block (#%unless cond-expr (#%repeat))))))]
 
   [((Return ctxt (list exprs ... (vararg vararg-expr))))
    (with-syntax ([(expr ...) (map compile-expr* exprs)]
@@ -298,7 +295,7 @@
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
      (syntax/loc ctxt
-       (#%let/ec #%break
+       (#%let/cc #%break
          (#%let #%while ()
            (#%when cond-expr
              block
@@ -341,14 +338,14 @@
                  [block (compile-block block)])
      (syntax/loc ctxt
        (#%lambda ([param nil] ... . #%rest)
-         (#%let/ec #%return block))))]
+         (#%let/cc #%return block))))]
 
   [((Func ctxt params block))
    (with-syntax ([(param ...) params]
                  [block (compile-block block)])
      (syntax/loc ctxt
        (#%lambda ([param nil] ... . #%unused-rest)
-         (#%let/ec #%return block))))]
+         (#%let/cc #%return block))))]
 
   [((Subscript ctxt expr field-expr))
    (with-syntax ([expr (compile-expr* expr)]
@@ -492,3 +489,6 @@
 
 (define (format-sym fmt . args)
   (string->symbol (apply format fmt args)))
+
+(define (maybe-void stmts)
+  (if (null? stmts) '((#%void)) stmts))

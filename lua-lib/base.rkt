@@ -28,7 +28,7 @@
   [else #%else]
   [lambda #%lambda]
   [let #%let]
-  [let/ec #%let/ec]
+  [let/cc #%let/cc]
   [provide #%provide]
   [time #%time]
   [truthy? #%truthy?]
