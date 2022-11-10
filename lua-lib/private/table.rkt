@@ -2,6 +2,7 @@
 
 (require racket/lazy-require
          racket/match
+         "exn.rkt"
          "nil.rkt")
 
 (lazy-require
@@ -68,7 +69,11 @@
                              [(table? index) (table-ref index k)]
                              [(procedure? index) (index t k)]
                              [else nil]))])
-  (hash-ref (table-ht t) k default-proc))
+  (cond
+    [(nil? t)
+     (raise-lua-error (format "attempt to index a nil value~n  index: ~a" (lua:tostring k)))]
+    [else
+     (hash-ref (table-ht t) k default-proc)]))
 
 (define (table-set! t k v)
   (if (nil? v)
