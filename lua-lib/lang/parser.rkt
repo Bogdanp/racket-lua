@@ -77,20 +77,20 @@
     (skip l 'eof)))
 
 (define (parse-block l [enders '(end)])
-  (define ctxt
-    (token-ctxt (lexer-peek l)))
+  (define loc
+    (token-loc (lexer-peek l)))
   (let loop ([stmts null])
     (match (lexer-peek l)
       [(eof)
-       (Block ctxt (reverse stmts))]
+       (Block loc (reverse stmts))]
       [(keyword id)
        #:when (member id enders)
-       (Block ctxt (reverse stmts))]
+       (Block loc (reverse stmts))]
       [(keyword 'return)
-       (define return-ctxt (token-ctxt (expect l 'keyword 'return)))
-       (define return (Return return-ctxt (parse-exprs l)))
+       (define return-loc (token-loc (expect l 'keyword 'return)))
+       (define return (Return return-loc (parse-exprs l)))
        (maybe-skip l 'semicolon)
-       (Block ctxt (reverse (cons return stmts)))]
+       (Block loc (reverse (cons return stmts)))]
       [(semicolon)
        (skip l 'semicolon)
        (loop stmts)]
@@ -102,59 +102,59 @@
     [(or (name _) (lparen))
      (parse-assignment-or-call l)]
     [(coloncolon)
-     (define ctxt (token-ctxt (expect l 'coloncolon)))
+     (define loc (token-loc (expect l 'coloncolon)))
      (define name (parse-name l))
-     (begin0 (Label ctxt name)
+     (begin0 (Label loc name)
        (skip l 'coloncolon))]
     [(keyword 'break)
-     (Break (token-ctxt (expect l 'keyword 'break)))]
+     (Break (token-loc (expect l 'keyword 'break)))]
     [(keyword 'goto)
-     (define ctxt (token-ctxt (expect l 'keyword 'goto)))
+     (define loc (token-loc (expect l 'keyword 'goto)))
      (define label (parse-name l))
-     (Goto ctxt label)]
+     (Goto loc label)]
     [(keyword 'do)
-     (define ctxt (token-ctxt (expect l 'keyword 'do)))
+     (define loc (token-loc (expect l 'keyword 'do)))
      (define block (parse-block l))
-     (begin0 (Do ctxt block)
+     (begin0 (Do loc block)
        (skip l 'keyword 'end))]
     [(keyword 'while)
-     (define ctxt (token-ctxt (expect l 'keyword 'while)))
+     (define loc (token-loc (expect l 'keyword 'while)))
      (define cond-expr (parse-expr l))
      (skip l 'keyword 'do)
      (define block (parse-block l))
-     (begin0 (While ctxt cond-expr block)
+     (begin0 (While loc cond-expr block)
        (skip l 'keyword 'end))]
     [(keyword 'repeat)
-     (define ctxt (token-ctxt (expect l 'keyword 'repeat)))
+     (define loc (token-loc (expect l 'keyword 'repeat)))
      (define block (parse-block l '(until)))
      (skip l 'keyword 'until)
      (define cond-expr (parse-expr l))
-     (Repeat ctxt cond-expr block)]
+     (Repeat loc cond-expr block)]
     [(keyword 'if)
      (parse-if-block l)]
     [(keyword 'function)
-     (define ctxt (token-ctxt (expect l 'keyword 'function)))
+     (define loc (token-loc (expect l 'keyword 'function)))
      (define function
        (match (parse-funcname l)
          [(? symbol? name)
-          (FuncDef ctxt name (parse-params l) (parse-block l))]
+          (FuncDef loc name (parse-params l) (parse-block l))]
          [(? list? names)
-          (FuncDef ctxt names (parse-params l) (parse-block l))]
+          (FuncDef loc names (parse-params l) (parse-block l))]
          [(cons names attr)
-          (MethodDef ctxt names attr (parse-params l) (parse-block l))]))
+          (MethodDef loc names attr (parse-params l) (parse-block l))]))
      (begin0 function
        (skip l 'keyword 'end))]
     [(keyword 'for)
      (parse-for-block l)]
     [(keyword 'local)
-     (define ctxt (token-ctxt (expect l 'keyword 'local)))
+     (define loc (token-loc (expect l 'keyword 'local)))
      (match (lexer-peek l)
        [(keyword 'function)
         (skip l 'keyword 'function)
         (define name (parse-name l))
         (define params (parse-params l))
         (define block (parse-block l))
-        (begin0 (LocalFunction ctxt name params block)
+        (begin0 (LocalFunction loc name params block)
           (expect l 'keyword 'end))]
        [_
         (define names (parse-names l))
@@ -162,15 +162,15 @@
           [(op '=)
            (skip l 'op '=)
            (define exprs (parse-exprs l))
-           (LocalAssignment ctxt names exprs)]
+           (LocalAssignment loc names exprs)]
           [_
-           (LocalAssignment ctxt names null)])])]
+           (LocalAssignment loc names null)])])]
     [tok
      (expected "statement" tok)]))
 
 (define (parse-for-block l)
   (define tok (expect l 'keyword 'for))
-  (define ctxt (token-ctxt tok))
+  (define loc (token-loc tok))
   (define name (parse-name l))
   (match (lexer-peek l)
     [(op '=)
@@ -189,7 +189,7 @@
      (skip l 'keyword 'do)
      (define block
        (parse-block l))
-     (begin0 (For ctxt name init-expr limit-expr step-expr block)
+     (begin0 (For loc name init-expr limit-expr step-expr block)
        (skip l 'keyword 'end))]
     [(comma)
      (skip l 'comma)
@@ -199,7 +199,7 @@
      (skip l 'keyword 'do)
      (define block
        (parse-block l))
-     (begin0 (ForIn ctxt names exprs block)
+     (begin0 (ForIn loc names exprs block)
        (skip l 'keyword 'end))]
     [(keyword 'in)
      (define names (list name))
@@ -208,13 +208,13 @@
      (skip l 'keyword 'do)
      (define block
        (parse-block l))
-     (begin0 (ForIn ctxt names exprs block)
+     (begin0 (ForIn loc names exprs block)
        (skip l 'keyword 'end))]
     [_
      (expected "equals, comma or 'in' keyword" tok)]))
 
 (define (parse-if-block l [kwd 'if])
-  (define ctxt (token-ctxt (expect l 'keyword kwd)))
+  (define loc (token-loc (expect l 'keyword kwd)))
   (define cond-expr (parse-expr l))
   (skip l 'keyword 'then)
   (define then-block (parse-block l '(elseif else end)))
@@ -227,7 +227,7 @@
        (parse-block l)]
       [_
        #f]))
-  (begin0 (If ctxt cond-expr then-block else-block)
+  (begin0 (If loc cond-expr then-block else-block)
     (when (eq? kwd 'if)
       (skip l 'keyword 'end))))
 
@@ -244,7 +244,7 @@
            [(and (op '=) tok)
             (skip l 'op)
             (Assignment
-             (token-ctxt tok)
+             (token-loc tok)
              (reverse (cons e vars))
              (parse-exprs l))]
            [tok
@@ -256,19 +256,19 @@
   (match tok
     [(dot)
      (skip l 'dot)
-     (parse-primaryexpr l (Attribute (token-ctxt tok) e (parse-name l)))]
+     (parse-primaryexpr l (Attribute (token-loc tok) e (parse-name l)))]
     [(lsqbrace)
      (skip l 'lsqbrace)
      (define sub-e (parse-expr l))
      (skip l 'rsqbrace)
-     (parse-primaryexpr l (Subscript (token-ctxt tok) e sub-e))]
+     (parse-primaryexpr l (Subscript (token-loc tok) e sub-e))]
     [(lparen)
-     (parse-primaryexpr l (Call (token-ctxt tok) e (parse-args l)))]
+     (parse-primaryexpr l (Call (token-loc tok) e (parse-args l)))]
     [(colon)
      (skip l 'colon)
      (define name (parse-name l))
      (define args (parse-args l))
-     (parse-primaryexpr l (CallMethod (token-ctxt tok) e name args))]
+     (parse-primaryexpr l (CallMethod (token-loc tok) e name args))]
     [_ e]))
 
 (define (parse-prefixexp l)
@@ -305,7 +305,7 @@
             (loop (step rhs-e next-prec))]
 
            [_
-            (step (Binop (token-ctxt tok) (token-val tok) lhs-e rhs-e) depth)]))]
+            (step (Binop (token-loc tok) (token-val tok) lhs-e rhs-e) depth)]))]
       [_ lhs-e])))
 
 (define (parse-term l)
@@ -328,8 +328,8 @@
     [(name _)
      (parse-primaryexpr l)]
     [(and (dotdotdot) tok)
-     (define ctxt (token-ctxt tok))
-     (begin0 (Call ctxt '#%va-args null)
+     (define loc (token-loc tok))
+     (begin0 (Call loc '#%va-args null)
        (skip l 'dotdotdot))]
     [(op (and (or 'not '\# '~ '-) id))
      (parse-unary-expr l id)]
@@ -355,7 +355,7 @@
   (define tok (expect l 'op id))
   (define prec (precedence op))
   (define expr (parse-expr l (parse-term l) prec))
-  (Unop (token-ctxt tok) op expr))
+  (Unop (token-loc tok) op expr))
 
 (define (parse-args l)
   (match (lexer-peek l)
@@ -381,7 +381,7 @@
 (define (parse-function l)
   (define function
     (Func
-     (token-ctxt (expect l 'keyword 'function))
+     (token-loc (expect l 'keyword 'function))
      (parse-params l)
      (parse-block l)))
   (begin0 function
@@ -416,7 +416,7 @@
 (define (parse-table l)
   (define table
     (Table
-     (token-ctxt (expect l 'lcubrace))
+     (token-loc (expect l 'lcubrace))
      (match (lexer-peek l)
        [(rcubrace) null]
        [_ (parse-fields l)])))
@@ -441,14 +441,14 @@
 (define (parse-field l)
   (match (lexer-peek l)
     [(lsqbrace)
-     (define ctxt (token-ctxt (expect l 'lsqbrace)))
+     (define loc (token-loc (expect l 'lsqbrace)))
      (define field-expr (parse-expr l))
      (skip l 'rsqbrace)
      (skip l 'op '=)
      (define value-expr (parse-expr l))
-     (FieldExpr ctxt field-expr value-expr)]
+     (FieldExpr loc field-expr value-expr)]
     [(and (name _) tok)
-     (define ctxt (token-ctxt tok))
+     (define loc (token-loc tok))
      (define name-or-expr (parse-primaryexpr l))
      (match (lexer-peek l)
        [(op '=)
@@ -456,12 +456,12 @@
         (define name name-or-expr)
         (skip l 'op '=)
         (define expr (parse-expr l))
-        (FieldLit ctxt name expr)]
+        (FieldLit loc name expr)]
        [_
-        (Field ctxt name-or-expr)])]
+        (Field loc name-or-expr)])]
     [tok
      (Field
-      (token-ctxt tok)
+      (token-loc tok)
       (parse-expr l))]))
 
 (define (parse-funcname l)
@@ -515,14 +515,12 @@
   (when (eq? (token-type (lexer-peek l)) type)
     (skip l type)))
 
-(define (token-ctxt t)
+(define (token-loc t)
   (define str (token-str t))
-  (define loc
-    (vector
-     (current-source-name)
-     (token-line t)
-     (token-col t)
-     (token-pos t)
-     (and (string? str)
-          (string-length str))))
-  (datum->syntax #f 'srcloc loc))
+  (srcloc
+   (current-source-name)
+   (token-line t)
+   (token-col t)
+   (token-pos t)
+   (and (string? str)
+        (string-length str))))

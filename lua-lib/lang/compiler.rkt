@@ -12,7 +12,7 @@
 
 (define (compile-chunk chunk [execute? #t])
   (with-syntax ([block (compile-block chunk)])
-    (quasisyntax/loc (Node-ctxt chunk)
+    (quasisyntax/loc (Node-loc chunk)
       ((#%provide #%chunk)
        (#%define _ENV (#%global))
        (#%load-stdlib! _ENV)
@@ -25,13 +25,13 @@
                #'#%chunk-proc))))))
 
 (define/match (compile-block _)
-  [((Block ctxt stmts))
+  [((Block loc stmts))
    (with-syntax ([(statement ...) (map compile-statement (Lua->L1 stmts))])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%begin statement ... (#%values))))])
 
 (define/match (compile-statement e)
-  [((Assignment ctxt vars (list exprs ... (vararg vararg-expr))))
+  [((Assignment loc vars (list exprs ... (vararg vararg-expr))))
    (with-syntax ([((attr-temp attr-exp) ...)
                   (vars->attr-temp&exprs vars)]
                  [((sub-lhs-temp sub-lhs-expr sub-rhs-temp sub-rhs-expr) ...)
@@ -51,7 +51,7 @@
                       (list (format-id #f "#%temp~a" idx)
                             (compile-assignment-var var idx)
                             (add1 idx))))])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%let
          ([attr-temp attr-exp]
           ...
@@ -67,7 +67,7 @@
            (#%set! var temp) ...
            (#%set! va-var va-temp) ...))))]
 
-  [((Assignment ctxt vars exprs))
+  [((Assignment loc vars exprs))
    (let ([exprs (indexed exprs)])
      (with-syntax ([((attr-temp attr-expr) ...)
                     (vars->attr-temp&exprs vars)]
@@ -81,7 +81,7 @@
                       (list temp
                             (compile-assignment-var var idx)
                             (compile-expr* expr)))])
-       (syntax/loc ctxt
+       (syntax/loc loc
          (#%let
            ([attr-temp attr-expr]
             ...
@@ -93,26 +93,26 @@
             ...)
            (#%set! var temp) ...))))]
 
-  [((Break ctxt))
-   (syntax/loc ctxt
+  [((Break loc))
+   (syntax/loc loc
      (#%break))]
 
   [((or (? Call?)
         (? CallMethod?)))
    (compile-call e)]
 
-  [((Do ctxt block))
+  [((Do loc block))
    (with-syntax ([block (compile-block block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%let () block)))]
 
-  [((For ctxt name init-expr limit-expr step-expr block))
+  [((For loc name init-expr limit-expr step-expr block))
    (with-syntax ([name name]
                  [init-expr (compile-expr init-expr)]
                  [limit-expr (compile-expr limit-expr)]
                  [step-expr (compile-expr step-expr)]
                  [block (compile-block block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%let/cc #%break
          (#%let
            ([#%init init-expr]
@@ -127,85 +127,85 @@
                block
                (#%for (+ name #%step))))))))]
 
-  [((ForIn ctxt names exprs block))
+  [((ForIn loc names exprs block))
    (define protect-stmt
      (Protect
-      ctxt
+      loc
       (list
        (While
-        ctxt #t
+        loc #t
         (Block
-         ctxt
+         loc
          (list*
-          (Assignment ctxt names (list (Call ctxt '#%iter '(#%state #%control))))
-          (Assignment ctxt '(#%control) (list (car names)))
-          (If ctxt
-              (Binop ctxt '== '#%control 'nil)
-              (Block ctxt (list (Break ctxt))) #f)
+          (Assignment loc names (list (Call loc '#%iter '(#%state #%control))))
+          (Assignment loc '(#%control) (list (car names)))
+          (If loc
+              (Binop loc '== '#%control 'nil)
+              (Block loc (list (Break loc))) #f)
           (Block-stmts block)))))
       (list
-       (If ctxt
-           (Binop ctxt '~= '#%closing 'nil)
-           (Block ctxt (list (Call ctxt '#%closing null)))
+       (If loc
+           (Binop loc '~= '#%closing 'nil)
+           (Block loc (list (Call loc '#%closing null)))
            #f))))
    (compile-statement
-    (Let ctxt '(#%iter #%state #%control #%closing) exprs (list protect-stmt)))]
+    (Let loc '(#%iter #%state #%control #%closing) exprs (list protect-stmt)))]
 
-  [((FuncDef ctxt (? list? names) params block))
+  [((FuncDef loc (? list? names) params block))
    (compile-statement
-    (Assignment ctxt
-                (list (names->subscripts ctxt names))
-                (list (Func ctxt params block))))]
+    (Assignment loc
+                (list (names->subscripts loc names))
+                (list (Func loc params block))))]
 
-  [((FuncDef ctxt name (list params ... '...) block))
+  [((FuncDef loc name (list params ... '...) block))
    (with-syntax ([name name]
                  [(param ...) params]
                  [block (compile-block block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%define (name [param nil] ... . #%rest) (#%let/cc #%return block))))]
 
-  [((FuncDef ctxt name params block))
+  [((FuncDef loc name params block))
    (with-syntax ([name name]
                  [(param ...) params]
                  [block (compile-block block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%define (name [param nil] ... . #%unused-rest) (#%let/cc #%return block))))]
 
-  [((Goto ctxt name))
+  [((Goto loc name))
    (with-syntax ([name (format-label-id name)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (name name)))]
 
-  [((If ctxt cond-expr then-block #f))
+  [((If loc cond-expr then-block #f))
    (with-syntax ([cond-expr (compile-expr* cond-expr)]
                  [then-block (compile-block then-block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%when cond-expr then-block)))]
 
-  [((If ctxt cond-expr then-block (? If? elseif-block)))
+  [((If loc cond-expr then-block (? If? elseif-block)))
    (with-syntax ([cond-expr (compile-expr* cond-expr)]
                  [then-block (compile-block then-block)]
                  [else-block (compile-statement elseif-block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%cond
          [cond-expr then-block nil]
          [#%else else-block nil])))]
 
-  [((If ctxt cond-expr then-block else-block))
+  [((If loc cond-expr then-block else-block))
    (with-syntax ([cond-expr (compile-expr* cond-expr)]
                  [then-block (compile-block then-block)]
                  [else-block (compile-block else-block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%cond
          [cond-expr then-block nil]
          [#%else else-block nil])))]
 
-  [((Label ctxt name))
+  [((Label loc name))
    (with-syntax ([name (format-label-id name)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%define name (#%call/cc #%values))))]
 
-  [((Let ctxt vars (list exprs ... (vararg vararg-expr)) stmts))
+  [((Let loc vars (list exprs ... (vararg vararg-expr)) stmts))
    (with-syntax ([((temp var expr) ...)
                   (for/list ([idx (in-naturals)]
                              [var (in-list vars)]
@@ -220,7 +220,7 @@
                       (define temp (format-id #f "#%temp~a" idx))
                       (list var temp (add1 idx))))]
                  [(stmt ...) (maybe-void (map compile-statement stmts))])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%let
          ([temp expr]
           ...
@@ -234,7 +234,7 @@
               ...)
              stmt ...)))))]
 
-  [((Let ctxt vars exprs stmts))
+  [((Let loc vars exprs stmts))
    (let ([exprs (indexed exprs)])
      (with-syntax ([((temp var expr) ...)
                     (for/list ([idx (in-naturals)]
@@ -243,58 +243,58 @@
                       (define expr (hash-ref exprs idx 'nil))
                       (list temp var (compile-expr* expr)))]
                    [(stmt ...) (maybe-void (map compile-statement stmts))])
-       (syntax/loc ctxt
+       (syntax/loc loc
          (#%let
            ([temp expr] ...)
            (#%let
              ([var temp] ...)
              stmt ...)))))]
 
-  [((LetFunction ctxt name params block stmts))
+  [((LetFunction loc name params block stmts))
    (with-syntax ([name name]
-                 [func-expr (compile-expr (Func ctxt params block))]
+                 [func-expr (compile-expr (Func loc params block))]
                  [(stmt ...) (maybe-void (map compile-statement stmts))])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%let ([name nil])
          (#%set! name func-expr)
          stmt ...)))]
 
-  [((MethodDef ctxt names attr params block))
+  [((MethodDef loc names attr params block))
    (compile-statement
-    (Assignment ctxt
-                (list (Subscript ctxt (names->subscripts ctxt names) (symbol->bytes attr)))
-                (list (Func ctxt (cons 'self params) block))))]
+    (Assignment loc
+                (list (Subscript loc (names->subscripts loc names) (symbol->bytes attr)))
+                (list (Func loc (cons 'self params) block))))]
 
-  [((Protect ctxt value-stmts post-stmts))
+  [((Protect loc value-stmts post-stmts))
    (with-syntax ([(value-stmt ...) (maybe-void (map compile-statement value-stmts))]
                  [(post-stmt ...) (maybe-void (map compile-statement post-stmts))])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%dynamic-wind
          #%void
          (#%lambda () value-stmt ...)
          (#%lambda () post-stmt ...))))]
 
-  [((Repeat ctxt cond-expr block))
+  [((Repeat loc cond-expr block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%let/cc #%break (#%let #%repeat () block (#%unless cond-expr (#%repeat))))))]
 
-  [((Return ctxt (list exprs ... (vararg vararg-expr))))
+  [((Return loc (list exprs ... (vararg vararg-expr))))
    (with-syntax ([(expr ...) (map compile-expr* exprs)]
                  [vararg-expr (compile-expr vararg-expr)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%apply #%return expr ... (#%adjust-va vararg-expr))))]
 
-  [((Return ctxt exprs))
+  [((Return loc exprs))
    (with-syntax ([(expr ...) (map compile-expr* exprs)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%return expr ...)))]
 
-  [((While ctxt cond-expr block))
+  [((While loc cond-expr block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%let/cc #%break
          (#%let #%while ()
            (#%when cond-expr
@@ -302,10 +302,10 @@
              (#%while))))))])
 
 (define/match (compile-expr* e)
-  [((or (Call ctxt _ _)
-        (CallMethod ctxt _ _ _)))
+  [((or (Call loc _ _)
+        (CallMethod loc _ _ _)))
    (with-syntax ([expr (compile-expr e)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%adjust expr)))]
 
   [(_)
@@ -317,96 +317,96 @@
   [((? bytes?))   (datum->syntax #f e)]
   [((? symbol?))  (datum->syntax #f e)]
 
-  [((Attribute ctxt expr name))
+  [((Attribute loc expr name))
    (with-syntax ([expr (compile-expr* expr)]
                  [name (symbol->bytes name)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%subscript expr name)))]
 
-  [((Binop ctxt op lhs-expr rhs-expr))
+  [((Binop loc op lhs-expr rhs-expr))
    (with-syntax ([binop op]
                  [lhs-expr (compile-expr* lhs-expr)]
                  [rhs-expr (compile-expr* rhs-expr)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (binop lhs-expr rhs-expr)))]
 
   [((or (? Call?) (? CallMethod?)))
    (compile-call e)]
 
-  [((Func ctxt (list params ... '...) block))
+  [((Func loc (list params ... '...) block))
    (with-syntax ([(param ...) params]
                  [block (compile-block block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%lambda ([param nil] ... . #%rest)
          (#%let/cc #%return block))))]
 
-  [((Func ctxt params block))
+  [((Func loc params block))
    (with-syntax ([(param ...) params]
                  [block (compile-block block)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%lambda ([param nil] ... . #%unused-rest)
          (#%let/cc #%return block))))]
 
-  [((Subscript ctxt expr field-expr))
+  [((Subscript loc expr field-expr))
    (with-syntax ([expr (compile-expr* expr)]
                  [field-expr (compile-expr* field-expr)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%subscript expr field-expr)))]
 
-  [((Table ctxt (list field-exprs ... (Field _ (vararg vararg-expr)))))
+  [((Table loc (list field-exprs ... (Field _ (vararg vararg-expr)))))
    (with-syntax ([(field-expr ...) (map compile-field field-exprs)]
                  [vararg-expr (compile-expr vararg-expr)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%apply #%table field-expr ... (#%adjust-va vararg-expr))))]
 
-  [((Table ctxt field-exprs))
+  [((Table loc field-exprs))
    (with-syntax ([(field-expr ...) (map compile-field field-exprs)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%table field-expr ...)))]
 
-  [((Unop ctxt op expr))
+  [((Unop loc op expr))
    (with-syntax ([unop op]
                  [expr (compile-expr* expr)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (unop expr)))])
 
 (define/match (compile-call _e)
-  [((CallMethod ctxt target-expr attr arg-exprs))
-   (define subscript-expr (Subscript ctxt '#%instance (symbol->bytes attr)))
+  [((CallMethod loc target-expr attr arg-exprs))
+   (define subscript-expr (Subscript loc '#%instance (symbol->bytes attr)))
    (with-syntax ([target-expr (compile-expr* target-expr)]
-                 [call-expr (compile-expr* (Call ctxt subscript-expr (cons '#%instance arg-exprs)))])
-     (syntax/loc ctxt
+                 [call-expr (compile-expr* (Call loc subscript-expr (cons '#%instance arg-exprs)))])
+     (syntax/loc loc
        (#%let ([#%instance target-expr]) call-expr)))]
 
-  [((Call ctxt rator-expr (list rand-exprs ... (vararg vararg-expr))))
+  [((Call loc rator-expr (list rand-exprs ... (vararg vararg-expr))))
    (with-syntax ([rator-expr (compile-expr* rator-expr)]
                  [(rand-expr ...) (map compile-expr* rand-exprs)]
                  [vararg-expr (compile-expr vararg-expr)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%apply rator-expr rand-expr ... (#%adjust-va vararg-expr))))]
 
-  [((Call ctxt rator-expr rand-exprs))
+  [((Call loc rator-expr rand-exprs))
    (with-syntax ([rator-expr (compile-expr* rator-expr)]
                  [(rand-expr ...) (map compile-expr* rand-exprs)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (rator-expr rand-expr ...)))])
 
 (define/match (compile-field _e)
-  [((Field ctxt expr))
+  [((Field loc expr))
    (with-syntax ([expr (compile-expr* expr)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        expr))]
 
-  [((FieldExpr ctxt field-expr value-expr))
+  [((FieldExpr loc field-expr value-expr))
    (with-syntax ([field-expr (compile-expr* field-expr)]
                  [value-expr (compile-expr* value-expr)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%cons field-expr value-expr)))]
 
-  [((FieldLit ctxt name expr))
+  [((FieldLit loc name expr))
    (with-syntax ([name (symbol->bytes name)]
                  [expr (compile-expr* expr)])
-     (syntax/loc ctxt
+     (syntax/loc loc
        (#%cons name expr)))])
 
 
@@ -421,11 +421,11 @@
     (match stmts
       [(list)
        (reverse res)]
-      [(cons (LocalAssignment ctxt names exprs) stmts)
-       (define node (Let ctxt names exprs (Lua->L1 stmts)))
+      [(cons (LocalAssignment loc names exprs) stmts)
+       (define node (Let loc names exprs (Lua->L1 stmts)))
        (reverse (cons node res))]
-      [(cons (LocalFunction ctxt name params block) stmts)
-       (define node (LetFunction ctxt name params block (Lua->L1 stmts)))
+      [(cons (LocalFunction loc name params block) stmts)
+       (define node (LetFunction loc name params block (Lua->L1 stmts)))
        (reverse (cons node res))]
       [(cons stmt stmts)
        (loop (cons stmt res) stmts)])))
@@ -444,13 +444,13 @@
 (define (format-label-id name-id)
   (format-id #f "#%label:~a" name-id))
 
-(define (names->subscripts ctxt names)
+(define (names->subscripts loc names)
   (let loop ([target (car names)]
              [names (cdr names)])
     (cond
       [(null? names) target]
       [else
-       (define sub (Subscript ctxt target (symbol->bytes (car names))))
+       (define sub (Subscript loc target (symbol->bytes (car names))))
        (loop sub (cdr names))])))
 
 (define (indexed lst)
@@ -477,13 +477,13 @@
 (define (compile-assignment-var var idx)
   (compile-expr
    (match var
-     [(Attribute ctxt _ name)
+     [(Attribute loc _ name)
       (define temp (format-sym "#%attr-temp~a" idx))
-      (Attribute ctxt temp name)]
-     [(Subscript ctxt _ _)
+      (Attribute loc temp name)]
+     [(Subscript loc _ _)
       (define lhs-temp (format-sym "#%sub-lhs-temp~a" idx))
       (define rhs-temp (format-sym "#%sub-rhs-temp~a" idx))
-      (Subscript ctxt lhs-temp rhs-temp)]
+      (Subscript loc lhs-temp rhs-temp)]
      [_
       var])))
 

@@ -7,7 +7,7 @@
 (provide
  (struct-out Node))
 
-(struct Node (ctxt) #:transparent)
+(struct Node (loc) #:transparent)
 
 (define-syntax (define-node-types stx)
   (syntax-parse stx
