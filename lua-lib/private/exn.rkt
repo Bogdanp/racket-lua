@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "nil.rkt")
+(require "nil.rkt"
+         "realm.rkt")
 
 (provide
  (struct-out exn:fail:lua)
@@ -8,5 +9,6 @@
 
 (struct exn:fail:lua exn:fail (value level))
 
-(define (raise-lua-error message [value nil] [level 1])
-  (raise (exn:fail:lua message (current-continuation-marks) value level)))
+(define (raise-lua-error who message [value nil] [level 1])
+  (define adjusted-message (error-message->adjusted-string who lua-realm message lua-realm))
+  (raise (exn:fail:lua adjusted-message (current-continuation-marks) value level)))

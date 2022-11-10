@@ -71,7 +71,7 @@
                              [else nil]))])
   (cond
     [(nil? t)
-     (raise-lua-error (format "attempt to index a nil value~n  index: ~a" (lua:tostring k)))]
+     (raise-lua-error #f (format "attempt to index a nil value~n  index: ~a" (lua:tostring k)))]
     [else
      (hash-ref (table-ht t) k default-proc)]))
 

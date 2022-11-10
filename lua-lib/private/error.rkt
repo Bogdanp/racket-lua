@@ -16,7 +16,7 @@
 
 (define (lua:error v [level 1] . _)
   (define message (format "error: ~a" (lua:tostring v)))
-  (raise-lua-error message v level))
+  (raise-lua-error 'error message v level))
 
 (define (lua:assert v [message #"assertion failed!"] . _)
   (when (falsy? v)
