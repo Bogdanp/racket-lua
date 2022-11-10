@@ -15,7 +15,7 @@
     (values #t (apply proc args))))
 
 (define (lua:error v [level 1] . _)
-  (define message (format "error: ~a" (lua:tostring v)))
+  (define message (bytes->string/utf-8 (lua:tostring v)))
   (raise-lua-error 'error message v level))
 
 (define (lua:assert v [message #"assertion failed!"] . _)
