@@ -17,8 +17,8 @@
 (provide
  #%app
  #%datum
+ #%declare
  (rename-out
-  [#%plain-module-begin #%module-begin]
   [apply #%apply]
   [begin #%begin]
   [call/cc #%call/cc]
@@ -63,6 +63,7 @@
   [lua:cond #%cond]
   [lua:error #%error]
   [lua:length #%length]
+  [lua:module-begin #%module-begin]
   [lua:negate #%negate]
   [lua:not not]
   [lua:or or]
@@ -140,3 +141,12 @@
     [(_)
      #:with #%rest (format-id stx "#%rest")
      #'(apply values #%rest)]))
+
+(define-syntax (lua:module-begin stx)
+  (syntax-parse stx
+    [(_ form ...)
+     #'(#%module-begin
+        (module configure-runtime racket/base
+          (require lua/lang/runtime-config))
+        (#%declare #:realm lua)
+        form ...)]))
