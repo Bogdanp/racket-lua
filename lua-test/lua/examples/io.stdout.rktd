@@ -1,1 +1,1 @@
-"hello!\nhello42world!\n"
+"hello!\nhello42world!\nhello, errors!\n"
