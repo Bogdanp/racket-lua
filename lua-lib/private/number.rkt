@@ -9,6 +9,7 @@
 
 (define (lua:tonumber e [base nil] . _)
   (cond
+    [(nil? e) nil]
     [(nil? base)
      (cond
        [(number? e) e]
