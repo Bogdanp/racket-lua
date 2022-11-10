@@ -11,10 +11,11 @@
            "lexer.rkt"
            "parser.rkt")
 
-  (define debug
-    (if (getenv "RACKET_LUA_DEBUG")
-        (compose1 (dynamic-require 'racket/pretty 'pretty-print) syntax->datum)
-        void))
+  (define (debug src stmts)
+    (when (getenv "RACKET_LUA_DEBUG")
+      (printf "<<~a>>~n" src)
+      ((dynamic-require 'racket/pretty 'pretty-print)
+       (syntax->datum stmts))))
 
   (define (custom-read _in)
     (error 'read "not supported"))
@@ -27,7 +28,7 @@
           (with-handlers ([exn:fail:lexer? reraise-lexer-error])
             (parse-chunk (make-lexer in)))))))
     (begin0 stmts
-      (debug stmts)))
+      (debug src stmts)))
 
   (define (get-info key defval default)
     (case key
