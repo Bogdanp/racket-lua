@@ -1,7 +1,7 @@
 #lang lua
 
-local str = require_racket("bytes")
-local len = require_racket("bytes-length")
+local str = racket["bytes"]
+local len = racket["bytes-length"]
 
 local string = {}
 

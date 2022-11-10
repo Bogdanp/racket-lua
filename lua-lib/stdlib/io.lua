@@ -1,7 +1,7 @@
 #lang lua
 
-local get_current_output_port = require_racket("current-output-port")
-local get_current_error_port = require_racket("current-error-port")
+local get_current_output_port = racket["current-output-port"]
+local get_current_error_port = racket["current-error-port"]
 
 local STDOUT, STDERR = 1, 2
 

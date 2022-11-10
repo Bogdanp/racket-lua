@@ -1,0 +1,1 @@
+"5\n5\nfalse\tmath.abs: not a number\n2.0\n1.0\nfalse\tmath.max: bad argument #1 to max (value expected)\n1\n5\nc\n-25\na\n"

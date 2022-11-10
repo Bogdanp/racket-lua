@@ -1,10 +1,10 @@
 #lang lua
 
-local app = require_racket("apply")
-local vals = require_racket("values")
-local cons = require_racket("cons")
-local list = require_racket("list")
-local reverse = require_racket("reverse")
+local app = racket.apply
+local vals = racket.values
+local cons = racket.cons
+local list = racket.list
+local reverse = racket.reverse
 
 local table = {}
 

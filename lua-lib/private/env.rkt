@@ -25,8 +25,11 @@
 
 (define (require-racket id-bytes)
   (unless (current-racket-imports-enabled?)
-    (lua:error "require_racket disabled"))
+    (lua:error "require_racket: disabled"))
   (dynamic-require racket/base (string->symbol (bytes->string/utf-8 id-bytes))))
+
+(define lua:racket
+  (make-table `(#"#%require" . ,require-racket)))
 
 
 ;; global environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -53,11 +56,11 @@
      `(#"pairs" . ,lua:pairs)
      `(#"pcall" . ,lua:pcall)
      `(#"print" . ,lua:print)
+     `(#"racket" . ,lua:racket)
      `(#"rawequal" . ,lua:rawequal)
      `(#"rawget" . ,lua:rawget)
      `(#"rawlen" . ,lua:rawlen)
      `(#"rawset" . ,lua:rawget)
-     `(#"require_racket" . ,require-racket)
      `(#"setmetatable" . ,lua:setmetatable)
      `(#"tonumber" . ,lua:tonumber)
      `(#"tostring" . ,lua:tostring)
@@ -75,16 +78,20 @@
  current-standard-library-modules
  load-standard-library!)
 
+(define-runtime-module-path-index racket.lua "../stdlib/racket.lua")
 (define-runtime-module-path-index file.lua "../stdlib/file.lua")
 (define-runtime-module-path-index io.lua   "../stdlib/io.lua")
+(define-runtime-module-path-index math.lua "../stdlib/math.lua")
 (define-runtime-module-path-index string.lua "../stdlib/string.lua")
 (define-runtime-module-path-index table.lua "../stdlib/table.lua")
 
 (define current-standard-library-modules
   (make-parameter
    (list
+    `(#"racket" . ,racket.lua)
     `(#"file"   . ,file.lua)
     `(#"io"     . ,io.lua)
+    `(#"math"   . ,math.lua)
     `(#"string" . ,string.lua)
     `(#"table"  . ,table.lua))))
 

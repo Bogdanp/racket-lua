@@ -6,5 +6,7 @@
 (define compile-include-files
   '("stdlib/io.lua"
     "stdlib/file.lua"
+    "stdlib/math.lua"
+    "stdlib/racket.lua"
     "stdlib/string.lua"
     "stdlib/table.lua"))

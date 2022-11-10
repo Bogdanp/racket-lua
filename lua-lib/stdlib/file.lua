@@ -1,11 +1,11 @@
 #lang lua
 
-local input_port_p = require_racket("input-port?")
-local output_port_p = require_racket("output-port?")
-local flush_output = require_racket("flush-output")
-local close_input_port = require_racket("close-input-port")
-local close_output_port = require_racket("close-output-port")
-local write_bytes = require_racket("write-bytes")
+local input_port_p = racket["input-port?"]
+local output_port_p = racket["output-port?"]
+local flush_output = racket["flush-output"]
+local close_input_port = racket["close-input-port"]
+local close_output_port = racket["close-output-port"]
+local write_bytes = racket["write-bytes"]
 
 local file = {}
 file.__name = "file"
