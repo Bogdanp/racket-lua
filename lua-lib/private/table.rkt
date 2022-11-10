@@ -37,16 +37,13 @@
 (define (make-table . args)
   (define ht (make-hash))
   (define index 1)
-  (let loop ([args args])
-    (for ([arg (in-list args)])
-      (match arg
-        [(? list?)
-         (loop arg)]
-        [`(,k . ,v)
-         (hash-set! ht k v)]
-        [_
-         (hash-set! ht index arg)
-         (set! index (add1 index))])))
+  (for ([arg (in-list args)])
+    (match arg
+      [(and `(,k . ,(and (not (? list?)) v)))
+       (hash-set! ht k v)]
+      [_
+       (hash-set! ht index arg)
+       (set! index (add1 index))]))
   (table nil ht))
 
 (define (table-length t)
