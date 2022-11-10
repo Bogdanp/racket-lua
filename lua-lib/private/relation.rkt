@@ -49,15 +49,15 @@
        [(procedure? rhs-dunder-proc)
         (lua:adjust* (λ () (rhs-dunder-proc b a)))]
        [else
-        (lua:error (format "~a: expected two numbers or two strings, received ~a and ~a")
-                   who
-                   (lua:tostring a)
-                   (lua:tostring b))])]
+        (lua:error (format "~a: expected two numbers or two strings, received ~a and ~a"
+                           who
+                           (lua:tostring a)
+                           (lua:tostring b)))])]
     [else
-     (lua:error (format "~a: expected two numbers or two strings, received ~a and ~a")
-                who
-                (lua:tostring a)
-                (lua:tostring b))]))
+     (lua:error (format "~a: expected two numbers or two strings, received ~a and ~a"
+                        who
+                        (lua:tostring a)
+                        (lua:tostring b)))]))
 
 (define-syntax (define-binop stx)
   (syntax-parse stx
