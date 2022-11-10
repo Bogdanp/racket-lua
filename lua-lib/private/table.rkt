@@ -14,7 +14,9 @@
  table-length
  table-meta-ref
  table-ref
+ lua:rawget
  table-set!
+ lua:rawset
  table-keys
 
  lua:getmetatable
@@ -73,10 +75,21 @@
       (raise-lua-error #f (format "attempt to index a nil value~n  index: ~a" (lua:tostring k)))
       (hash-ref (table-ht t) k default-proc)))
 
+(define (lua:rawget t k)
+  (unless (table? t)
+    (raise-lua-error #f (format "rawget: not a table: ~a" (lua:tostring k))))
+  (hash-ref (table-ht t) k nil))
+
 (define (table-set! t k v)
   (if (nil? v)
       (hash-remove! (table-ht t) k)
       (hash-set! (table-ht t) k v)))
+
+(define (lua:rawset t k v)
+  (begin0 t
+    (if (nil? v)
+        (hash-remove! (table-ht t) k)
+        (hash-set! (table-ht t) k v))))
 
 (define (table-keys t)
   (hash-keys (table-ht t)))
