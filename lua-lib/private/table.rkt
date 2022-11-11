@@ -82,9 +82,17 @@
   (hash-ref (table-ht t) k nil))
 
 (define (table-set! t k v)
-  (if (nil? v)
-      (hash-remove! (table-ht t) k)
-      (hash-set! (table-ht t) k v)))
+  (define dunder-value
+    (table-meta-ref t #"__newindex"))
+  (cond
+    [(table? dunder-value)
+     (table-set! dunder-value k v)]
+    [(procedure? dunder-value)
+     (dunder-value t k v)]
+    [(nil? v)
+     (hash-remove! (table-ht t) k)]
+    [else
+     (hash-set! (table-ht t) k v)]))
 
 (define (lua:rawset t k v)
   (begin0 t
