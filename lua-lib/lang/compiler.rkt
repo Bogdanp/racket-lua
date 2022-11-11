@@ -64,7 +64,7 @@
           ...
           [#%t (#%apply #%table (#%adjust-va vararg-expr))])
          (#%let
-           ([va-temp (#%table-ref #%t va-idx)] ...)
+           ([va-temp (#%subscript #%t va-idx)] ...)
            (#%set! var temp) ...
            (#%set! va-var va-temp) ...))))]
 
@@ -158,19 +158,11 @@
                 (list (names->subscripts loc names))
                 (list (Func loc params block))))]
 
-  [((FuncDef loc name (list params ... '...) block))
-   (with-syntax ([name name]
-                 [(param ...) params]
-                 [block (compile-block block)])
-     (syntax/loc loc
-       (#%define (name [param nil] ... . #%rest) (#%let/cc #%return block))))]
-
   [((FuncDef loc name params block))
-   (with-syntax ([name name]
-                 [(param ...) params]
-                 [block (compile-block block)])
-     (syntax/loc loc
-       (#%define (name [param nil] ... . #%unused-rest) (#%let/cc #%return block))))]
+   (compile-statement
+    (Assignment loc
+                (list name)
+                (list (Func loc params block))))]
 
   [((Goto loc name))
    (with-syntax ([name (format-label-id name)])
@@ -228,7 +220,7 @@
           ...
           [#%t (#%apply #%table (#%adjust-va vararg-expr))])
          (#%let
-           ([va-temp (#%table-ref #%t va-idx)] ...)
+           ([va-temp (#%subscript #%t va-idx)] ...)
            (#%let
              ([var temp]
               ...
@@ -257,8 +249,7 @@
                  [func-expr (compile-expr (Func loc params block))]
                  [(stmt ...) (maybe-void (map compile-statement stmts))])
      (syntax/loc loc
-       (#%let ([name nil])
-         (#%set! name func-expr)
+       (#%letrec ([name func-expr])
          stmt ...)))]
 
   [((MethodDef loc names attr params block))
@@ -280,7 +271,11 @@
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
      (syntax/loc loc
-       (#%let/cc #%break (#%let #%repeat () block (#%unless cond-expr (#%repeat))))))]
+       (#%let/cc #%break
+         (#%let #%repeat ()
+           block
+           (#%unless cond-expr
+             (#%repeat))))))]
 
   [((Return loc (list exprs ... (vararg vararg-expr))))
    (with-syntax ([(expr ...) (map compile-expr* exprs)]

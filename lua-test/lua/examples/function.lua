@@ -29,3 +29,14 @@ function variadic_add(...)
 end
 
 print(variadic_add(1, 2, 3, 4))
+print(_ENV["variadic_add"])
+
+function f()
+    return 1
+end
+
+function f()
+    return 2
+end
+
+print(f())

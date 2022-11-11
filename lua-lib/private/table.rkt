@@ -72,8 +72,12 @@
   (cond
     [(table? t)
      (hash-ref (table-ht t) k default-proc)]
-    [(or (nil? t) (number? t) (boolean? t))
-     (raise-lua-error #f (format "attempt to index a primitive value~n  index: ~a" (lua:tostring k)))]
+    [(nil? t)
+     (raise-lua-error #f (format "attempt to index nil~n  index: ~a" (lua:tostring k)))]
+    [(number? t)
+     (raise-lua-error #f (format "attempt to index a number~n  value: ~a~n  index: ~a" t (lua:tostring k)))]
+    [(boolean? t)
+     (raise-lua-error #f (format "attempt to index a bool~n  index: ~a" (lua:tostring k)))]
     [else
      nil]))
 

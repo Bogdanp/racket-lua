@@ -28,6 +28,7 @@
   [else #%else]
   [lambda #%lambda]
   [let #%let]
+  [letrec #%letrec]
   [let/cc #%let/cc]
   [provide #%provide]
   [time #%time]
@@ -75,8 +76,7 @@
   [lua:when #%when]
   [lua:~ ~]
   [lua:~= ~=]
-  [make-table #%table]
-  [table-ref #%table-ref]))
+  [make-table #%table]))
 
 (begin-for-syntax
   (define (id-stx->bytes-stx stx)
