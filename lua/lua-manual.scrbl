@@ -7,6 +7,7 @@
 
 @title{Lua}
 @author[(author+email "Bogdan Popa" "bogdan@defn.io")]
+@defmodule[lua]
 
 @(define (lua-anchor text)
    (link "https://lua.org" text))
@@ -15,6 +16,7 @@ This package provides a @hash-lang[] implementation of the
 @lua-anchor{Lua programming language}.  It is still a work in
 progress, but much of the core language is supported already.
 
+
 @section{Calling Lua from Racket}
 
 Lua modules can be imported directly from Racket.  Every Lua module
@@ -22,7 +24,7 @@ provides a single value called @racket[#%chunk] which represents the
 return value of that module.  For example, if you save the following
 program to a file named "add1.lua":
 
-@verbatim{
+@codeblock|{
 #lang lua
 
 function add1(x)
@@ -30,7 +32,7 @@ function add1(x)
 end
 
 return {add1 = add1}
-}
+}|
 
 You can use it from Racket like so:
 
@@ -39,6 +41,24 @@ You can use it from Racket like so:
 (define add1 (table-ref #%chunk #"add1"))
 (add1 5)
 ]
+
+
+@section{Calling Racket from Lua}
+
+Lua modules can access values from @racketmodname[racket/base] by
+indexing into the @tt{racket} global.  This is only allowed when the
+value of @racket[current-racket-imports-enabled?] is @racket[#t].
+
+@codeblock|{
+#lang lua
+
+local list = racket.list
+print(list(1, 2, 3))
+}|
+
+You can also alter the global environment in any way you like via the
+@racket[current-global-environment] parameter.
+
 
 @section{Differences from Lua}
 @subsection{@tt{goto}}
@@ -50,7 +70,7 @@ you may not jump to labels ``in the future.''
 @subsection{Integers}
 
 Integers are backed by regular Racket @racket[integer?] values, so
-the cannot overflow.
+they cannot overflow.
 
 @section{Reference}
 @subsection{Values}
@@ -106,6 +126,13 @@ the cannot overflow.
 
 @subsection{Environments}
 @defmodule[lua/env]
+
+@defparam[current-racket-imports-enabled? enabled? boolean? #:value #f]{
+  Controls whether or not Lua modules can access Racket code via the
+  @tt{racket} global.  Defaults to @racket[#f], except during the time
+  when the Lua standard library (distributed with this package) is
+  loaded.
+}
 
 @defparam[current-global-environment env table? #:value (make-initial-environment)]{
   Holds the global environment that is used when Lua chunks are
