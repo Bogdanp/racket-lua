@@ -164,7 +164,7 @@
 (define (stop _) #f)
 
 (define-λcase whitespace?
-  [(#\space #\tab #\newline #\return) whitespace?])
+  [(#\u00A0 #\space #\tab #\newline #\return) whitespace?])
 
 (define-λcase op-start?
   [(#\+ #\- #\* #\^ #\% #\& #\| #\#) stop]
