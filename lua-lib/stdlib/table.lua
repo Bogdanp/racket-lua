@@ -8,6 +8,37 @@ local reverse = racket.reverse
 
 local table = {}
 
+function table.select(index, ...)
+    local args = {...}
+    if index == "#" then
+        return #args
+    elseif type(index) ~= "number" then
+        error("select: expected an integer index or '#'")
+    end
+    if index < 0 then
+        index = #args + index + 1
+    end
+    local t, j = {}, 1
+    for i = index, #args do
+        t[j], j = args[i], j + 1
+    end
+    return t
+end
+
+function table.pack(v0, ...)
+    if v0 == nil then
+        return {}
+    end
+    local args = {v0, ...}
+    local res = { n = #args }
+    for k, v in pairs(args) do
+        if v ~= nil then
+            res[k] = v
+        end
+    end
+    return res
+end
+
 function table.unpack(t, i, j)
     i = i or 1
     j = j or #t
@@ -15,7 +46,7 @@ function table.unpack(t, i, j)
     for i = i, j do
         res = cons(t[i], res)
     end
-    return app(vals(reverse(res)))
+    return app(vals, reverse(res))
 end
 
 return table

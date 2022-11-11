@@ -68,9 +68,13 @@
                              [(table? index) (table-ref index k)]
                              [(procedure? index) (index t k)]
                              [else nil]))])
-  (if (nil? t)
-      (raise-lua-error #f (format "attempt to index a nil value~n  index: ~a" (lua:tostring k)))
-      (hash-ref (table-ht t) k default-proc)))
+  (cond
+    [(table? t)
+     (hash-ref (table-ht t) k default-proc)]
+    [(or (nil? t) (number? t) (boolean? t))
+     (raise-lua-error #f (format "attempt to index a primitive value~n  index: ~a" (lua:tostring k)))]
+    [else
+     nil]))
 
 (define (lua:rawget t k)
   (unless (table? t)

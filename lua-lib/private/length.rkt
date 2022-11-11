@@ -22,7 +22,7 @@
          (lua:adjust* (λ () (__len v)))
          (table-length v))]
     [else
-     (lua:error "#: expected a string or a table, received ~a" (lua:tostring v))]))
+     (lua:error (format "#: expected a string or a table, received ~a" (lua:tostring v)))]))
 
 
 ;; procedures ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -37,4 +37,4 @@
     [(table? v)
      (table-length v)]
     [else
-     (lua:error "rawlen: expected a string or a table, received ~a" (lua:tostring v))]))
+     (lua:error (format "rawlen: expected a string or a table, received ~a" (lua:tostring v)))]))
