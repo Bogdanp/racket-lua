@@ -12,7 +12,11 @@
 (define (lua:pcall proc . args)
   (with-handlers ([exn:fail:lua? (λ (e) (values #f (exn:fail:lua-value e)))]
                   [exn:fail? (λ (e) (values #f (exn-message e)))])
-    (values #t (apply proc args))))
+    (call-with-values
+     (lambda ()
+       (apply proc args))
+     (lambda results
+       (apply values #t results)))))
 
 (define (lua:error v [level 1] . _)
   (define message (bytes->string/utf-8 (lua:tostring v)))
