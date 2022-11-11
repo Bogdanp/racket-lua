@@ -39,11 +39,9 @@
 (define (lua:pairs t . _)
   (define __pairs
     (table-meta-ref t #"__pairs"))
-  (cond
-    [(nil? __pairs)
-     (values lua:next t nil)]
-    [else
-     (__pairs t)]))
+  (if (nil? __pairs)
+      (values lua:next t nil)
+      (__pairs t)))
 
 (define (lua:ipairs t . _)
   (define (next s idx)
