@@ -2,6 +2,8 @@
 
 print(coroutine.running())
 print(coroutine.isyieldable())
+print(coroutine.status(coroutine.running()))
+print(coroutine.resume(coroutine.running()))
 print(pcall(function() coroutine.close(coroutine.running()) end))
 
 local gen = coroutine.create(function()

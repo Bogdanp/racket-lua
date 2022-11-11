@@ -2,21 +2,23 @@
 
 local callcc = racket["call/cc"]
 
+local suspended, running, dead = 1, 2, 3
+local statuses = {"suspended", "running", "dead"}
 local thread = {}
 thread.__name = "thread"
 thread.__index = thread
 function thread.new(proc, status)
-    o = { k = proc, status = status or "suspended" }
+    o = { k = proc, status = status or suspended }
     setmetatable(o, thread)
     return o
 end
 
 local coroutine = {}
-local current = thread.new(nil, "running")
+local current = thread.new(nil, running)
 local main = current
 
 function coroutine.close(coro)
-    if coro.status == "running" then
+    if coro.status == suspended then
         error("coroutine.close: cannot close a running coroutine")
     end
     coro.status = "dead"
@@ -35,21 +37,21 @@ function coroutine.isyieldable(coro)
 end
 
 function coroutine.resume(coro, ...)
-    if coro.status ~= "suspended" then
+    if coro.status ~= suspended then
         return false, "coroutine.resume: cannot resume non-suspended coroutine"
     end
 
     local args = {...}
     local function impl(k)
-        if current.status ~= "dead" then
-            current.status = "suspended"
+        if current.status ~= dead then
+            current.status = suspended
             current.k = k
         end
         current.yield = nil
         local old = current
 
         current = coro
-        coro.status = "running"
+        coro.status = running
         coro.yield = function(...)
             return coroutine.resume(old, true, ...)
         end
@@ -58,8 +60,7 @@ function coroutine.resume(coro, ...)
             return table.pack(coro.k(table.unpack(args)))
         end
         local status, res = pcall(resume)
-
-        coro.status = "dead"
+        coro.status = dead
         if status then
             coroutine.resume(old, true, table.unpack(res))
         else
@@ -74,7 +75,7 @@ function coroutine.running()
 end
 
 function coroutine.status(c)
-    return c.status
+    return statuses[c.status]
 end
 
 function coroutine.wrap(proc)
