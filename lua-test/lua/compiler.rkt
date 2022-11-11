@@ -25,11 +25,11 @@
       (define stdout
         (call-with-output-string
          (lambda (out)
-           (parameterize ([current-global-environment (make-initial-environment)]
-                          [current-print-ids? #f]
-                          [current-error-port out]
-                          [current-output-port out])
-             (with-handlers ([exn:fail? (λ (e) (fail-check (format "~a: ~a" path (exn-message e))))])
+           (with-handlers ([exn:fail? (λ (e) (fail-check (format "~a: ~a" path (exn-message e))))])
+             (parameterize ([current-global-environment (make-initial-environment)]
+                            [current-print-ids? #f]
+                            [current-error-port out]
+                            [current-output-port out])
                (dynamic-require `(file ,(path->string path)) #f))))))
       (with-handlers ([exn:fail:filesystem?
                        (λ (_)
