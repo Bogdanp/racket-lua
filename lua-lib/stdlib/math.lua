@@ -3,6 +3,9 @@
 local abs = racket.abs
 local ceil = racket.ceiling
 local floor = racket.floor
+local sqrt = racket.sqrt
+local number_p = racket["number?"]
+local integer_p = racket["integer?"]
 
 local math = {}
 local function check(who, n)
@@ -50,6 +53,20 @@ function math.max(n, ...)
         end
     end
     return max
+end
+
+function math.sqrt(n)
+    check("sqrt", n)
+    return sqrt(n)
+end
+
+function math.type(n)
+    if integer_p(n) then
+        return "integer"
+    elseif number_p(n) then
+        return "float"
+    end
+    return nil
 end
 
 return math

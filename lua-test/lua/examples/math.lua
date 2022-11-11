@@ -28,3 +28,11 @@ print(math.max(a, b, c).id)
 
 print(math.min(5, 2, -25))
 print(math.min(a, b, c).id)
+
+print(math.sqrt(4))
+print(math.sqrt(-1))
+
+print(math.type(1))
+print(math.type(1.0))
+print(math.type(1.5))
+print(math.type(false))
