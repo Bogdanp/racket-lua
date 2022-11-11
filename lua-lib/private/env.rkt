@@ -78,22 +78,28 @@
  current-standard-library-modules
  load-standard-library!)
 
-(define-runtime-module-path-index racket.lua "../stdlib/racket.lua")
+(define-runtime-module-path-index coroutine.lua "../stdlib/coroutine.lua")
 (define-runtime-module-path-index file.lua "../stdlib/file.lua")
 (define-runtime-module-path-index io.lua   "../stdlib/io.lua")
 (define-runtime-module-path-index math.lua "../stdlib/math.lua")
+(define-runtime-module-path-index os.lua "../stdlib/os.lua")
+(define-runtime-module-path-index racket.lua "../stdlib/racket.lua")
 (define-runtime-module-path-index string.lua "../stdlib/string.lua")
 (define-runtime-module-path-index table.lua "../stdlib/table.lua")
 
 (define current-standard-library-modules
   (make-parameter
    (list
-    `(#"racket" . ,racket.lua)
+    `(#"racket" . ,racket.lua) ;; everything depends on racket.lua
+
     `(#"file"   . ,file.lua)
-    `(#"io"     . ,io.lua)
+    `(#"table"  . ,table.lua)
+
+    `(#"coroutine" . ,coroutine.lua) ;; depends on table.lua
+    `(#"io"     . ,io.lua) ;; depends on file.lua
     `(#"math"   . ,math.lua)
-    `(#"string" . ,string.lua)
-    `(#"table"  . ,table.lua))))
+    `(#"os"     . ,os.lua)
+    `(#"string" . ,string.lua))))
 
 (define (load-standard-library! env)
   (for ([p (in-list (current-standard-library-modules))])
