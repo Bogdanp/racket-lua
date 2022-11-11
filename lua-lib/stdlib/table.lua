@@ -15,14 +15,16 @@ function table.select(index, ...)
     elseif type(index) ~= "number" then
         error("select: expected an integer index or '#'")
     end
-    if index < 0 then
-        index = #args + index + 1
+    if index == 0 then
+        error("select: 0 index")
+    elseif index < 0 then
+        index = 1 + (index % #args)
     end
     local t, j = {}, 1
     for i = index, #args do
         t[j], j = args[i], j + 1
     end
-    return t
+    return table.unpack(t)
 end
 
 function table.pack(v0, ...)
@@ -30,13 +32,7 @@ function table.pack(v0, ...)
         return {}
     end
     local args = {v0, ...}
-    local res = { n = #args }
-    for k, v in pairs(args) do
-        if v ~= nil then
-            res[k] = v
-        end
-    end
-    return res
+    return {n = #args, table.unpack(args)}
 end
 
 function table.unpack(t, i, j)

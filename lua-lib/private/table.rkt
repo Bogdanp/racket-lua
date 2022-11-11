@@ -42,7 +42,8 @@
       [(and `(,k . ,(and (not (? list?)) v)))
        (hash-set! ht k v)]
       [_
-       (hash-set! ht index arg)
+       (unless (nil? arg)
+         (hash-set! ht index arg))
        (set! index (add1 index))]))
   (table nil ht))
 
