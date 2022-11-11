@@ -46,25 +46,25 @@
              (string->bytes/utf-8 arg))))
   (define env
     (make-table
-     `(#"_VERSION" . #"racket-lua 0.1")
-     `(#"arg" . ,arg)
-     `(#"assert" . ,lua:assert)
-     `(#"error" . ,lua:error)
+     `(#"_VERSION"     . #"racket-lua 0.1")
+     `(#"arg"          . ,arg)
+     `(#"assert"       . ,lua:assert)
+     `(#"error"        . ,lua:error)
      `(#"getmetatable" . ,lua:getmetatable)
-     `(#"ipairs" . ,lua:ipairs)
-     `(#"next" . ,lua:next)
-     `(#"pairs" . ,lua:pairs)
-     `(#"pcall" . ,lua:pcall)
-     `(#"print" . ,lua:print)
-     `(#"racket" . ,lua:racket)
-     `(#"rawequal" . ,lua:rawequal)
-     `(#"rawget" . ,lua:rawget)
-     `(#"rawlen" . ,lua:rawlen)
-     `(#"rawset" . ,lua:rawget)
+     `(#"ipairs"       . ,lua:ipairs)
+     `(#"next"         . ,lua:next)
+     `(#"pairs"        . ,lua:pairs)
+     `(#"pcall"        . ,lua:pcall)
+     `(#"print"        . ,lua:print)
+     `(#"racket"       . ,lua:racket)
+     `(#"rawequal"     . ,lua:rawequal)
+     `(#"rawget"       . ,lua:rawget)
+     `(#"rawlen"       . ,lua:rawlen)
+     `(#"rawset"       . ,lua:rawset)
      `(#"setmetatable" . ,lua:setmetatable)
-     `(#"tonumber" . ,lua:tonumber)
-     `(#"tostring" . ,lua:tostring)
-     `(#"type" . ,lua:type)))
+     `(#"tonumber"     . ,lua:tonumber)
+     `(#"tostring"     . ,lua:tostring)
+     `(#"type"         . ,lua:type)))
   (begin0 env
     (table-set! env #"_G" env)))
 
@@ -90,16 +90,16 @@
 (define current-standard-library-modules
   (make-parameter
    (list
-    `(#"racket" . ,racket.lua) ;; everything depends on racket.lua
+    `(#"racket"    . ,racket.lua)    ;; everything depends on racket.lua
 
-    `(#"file"   . ,file.lua)
-    `(#"table"  . ,table.lua)
+    `(#"file"      . ,file.lua)
+    `(#"table"     . ,table.lua)
 
     `(#"coroutine" . ,coroutine.lua) ;; depends on table.lua
-    `(#"io"     . ,io.lua) ;; depends on file.lua
-    `(#"math"   . ,math.lua)
-    `(#"os"     . ,os.lua)
-    `(#"string" . ,string.lua))))
+    `(#"io"        . ,io.lua)        ;; depends on file.lua
+    `(#"math"      . ,math.lua)
+    `(#"os"        . ,os.lua)
+    `(#"string"    . ,string.lua))))
 
 (define (load-standard-library! env)
   (for ([p (in-list (current-standard-library-modules))])

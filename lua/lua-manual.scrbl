@@ -1,6 +1,7 @@
 #lang scribble/manual
 
-@(require (for-label lua/env
+@(require scribble/example
+          (for-label lua/env
                      lua/value
                      racket/base
                      racket/contract))
@@ -61,27 +62,33 @@ You can also alter the global environment in any way you like via the
 
 
 @section{Differences from Lua}
-@subsection{@tt{goto}}
+@subsection{Chunks}
 
-The @tt{goto} keyword may only be used to jump to labels defined
-within the dynamic extent of the @tt{goto} statement itself.  That is,
-you may not jump to labels ``in the future.''
+Chunks may return multiple values, but everything after the first
+value is discarded when the results get bound to @tt{#%chunk}.
 
-@subsection{Integers}
+@subsection{The @tt{goto} Statement and Labels}
+
+Labels are lexically scoped so the @tt{goto} statement cannot jump to
+labels that have not yet been defined at the time the statement is
+executed or that are outside its scope.
+
+@subsection[#:tag "diffs-values"]{Values}
 
 Integers are backed by regular Racket @racket[integer?] values, so
-they cannot overflow.
+they do not overflow.
 
 @section{Reference}
 @subsection{Values}
 @defmodule[lua/value]
 
 @defthing[lua-value/c (or/c boolean? bytes? number? nil? procedure? table?)]{
-  The contract that identifies Lua values.
+  The contract that identifies Lua values.  Note that Lua strings map
+  to @racket[bytes?] values.
 }
 
 @deftogether[(
-  @defthing[nil lua-value/c]
+  @defthing[nil nil?]
   @defproc[(nil? [v any/c]) boolean?]
 )]{
   The nil value and the predicate that identifies it.
@@ -92,16 +99,25 @@ they cannot overflow.
 }
 
 @defproc[(make-table [v (or/c lua-value/c (cons/c lua-value/c lua-value/c))] ...) table?]{
-  Creates a @racket[table?].
+  Creates a @racket[table?].  Plain values are indexed sequentially,
+  @racket[cons]ed values represent key-value pairs and do not modify
+  the sequence number.
+
+  @examples[
+    (require lua/value)
+    (make-table 1 2 nil 3 (cons #"a" #"b"))
+  ]
 }
 
 @defproc[(table-ref [t table?]
                     [k lua-value/c]
-                    [default-proc (-> lua-value/c) #f]) lua-value/c]{
+                    [default-proc (-> lua-value/c) _default]) lua-value/c]{
   Retrieves the value at @racket[k] from @racket[t].  If @racket[t]
   doesn't contain @racket[k], the @racket[default-proc] is called.
   When not provided, the @racket[default-proc] looks up missing keys
   in the table's metatable.
+
+  This procedure is used during index lookups in Lua code.
 }
 
 @defproc[(table-set! [t table?]
@@ -110,18 +126,24 @@ they cannot overflow.
   Adds @racket[v] to @racket[t] under @racket[v], replacing any
   existing values.  If @racket[v] is @racket[nil], the key is removed
   from the table instead.
+
+  This procedure is used during index assignments in Lua code.
 }
 
 @defproc[(table-length [t table?]) exact-nonnegative-integer?]{
   Returns a border of @racket[t].
 }
 
-@defproc[(lua:getmetatable [t table?]) (or/c nil? table?)]{
+@defproc[(table-metatable [t table?]) (or/c nil? table?)]{
   Returns @racket[t]'s metatable.
+
+  This procedure is accessible from Lua code as @tt{getmetatable}.
 }
 
-@defproc[(lua:setmetatable [t table?] [meta table?]) table?]{
+@defproc[(set-table-metatable! [t table?] [meta table?]) table?]{
   Sets @racket[t]'s metatable to @racket[meta] and returns @racket[t].
+
+  This procedure is accessible from Lua code as @tt{setmetatable}.
 }
 
 @subsection{Environments}
