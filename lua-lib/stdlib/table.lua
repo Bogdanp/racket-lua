@@ -1,11 +1,5 @@
 #lang lua
 
-local app = racket.apply
-local vals = racket.values
-local cons = racket.cons
-local list = racket.list
-local reverse = racket.reverse
-
 local table = {}
 
 function table.select(index, ...)
@@ -20,29 +14,24 @@ function table.select(index, ...)
     elseif index < 0 then
         index = 1 + (index % #args)
     end
-    local t, j = {}, 1
-    for i = index, #args do
-        t[j], j = args[i], j + 1
-    end
-    return table.unpack(t)
+    return table.unpack(args, index)
 end
 
-function table.pack(v0, ...)
-    if v0 == nil then
+function table.pack(v, ...)
+    if v == nil then
         return {}
     end
-    local args = {v0, ...}
+    local args = {v, ...}
     return {n = #args, table.unpack(args)}
 end
 
 function table.unpack(t, i, j)
-    i = i or 1
-    j = j or #t
-    local res = list()
-    for i = i, j do
-        res = cons(t[i], res)
+    local function go(i, j)
+        if i <= j then
+            return t[i], go(i + 1, j)
+        end
     end
-    return app(vals, reverse(res))
+    return go(i or 1, j or #t)
 end
 
 return table
