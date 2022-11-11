@@ -23,3 +23,12 @@ local function f()
 end
 local x, y = f()
 print(x, y)
+
+local x, y = 5, f()
+print(x, y)
+
+x, y = 5, f()
+print(x, y)
+
+x, y, z = 5, f()
+print(x, y, z)

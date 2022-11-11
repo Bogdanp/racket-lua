@@ -46,11 +46,12 @@
                  [vararg-expr (compile-expr vararg-expr)]
                  [((va-temp va-var va-idx) ...)
                   (let ([start (min (length vars) (length exprs))])
-                    (for/list ([idx (in-naturals start)]
+                    (for/list ([tmp-idx (in-naturals start)]
+                               [tbl-idx (in-naturals)]
                                [var (in-list (drop vars start))])
-                      (list (format-id #f "#%temp~a" idx)
-                            (compile-assignment-var var idx)
-                            (add1 idx))))])
+                      (list (format-id #f "#%temp~a" tmp-idx)
+                            (compile-assignment-var var tmp-idx)
+                            (add1 tbl-idx))))])
      (syntax/loc loc
        (#%let
          ([attr-temp attr-exp]
@@ -215,10 +216,11 @@
                  [vararg-expr (compile-expr vararg-expr)]
                  [((va-var va-temp va-idx) ...)
                   (let ([start (min (length vars) (length exprs))])
-                    (for/list ([idx (in-naturals start)]
+                    (for/list ([tmp-idx (in-naturals start)]
+                               [tbl-idx (in-naturals)]
                                [var (in-list (drop vars start))])
-                      (define temp (format-id #f "#%temp~a" idx))
-                      (list var temp (add1 idx))))]
+                      (define temp (format-id #f "#%temp~a" tmp-idx))
+                      (list var temp (add1 tbl-idx))))]
                  [(stmt ...) (maybe-void (map compile-statement stmts))])
      (syntax/loc loc
        (#%let
