@@ -5,10 +5,12 @@ local port_to_bytes = racket.lib("racket/port", "port->bytes")
 local port_closed_p = racket["port-closed?"]
 local close_input_port = racket["close-input-port"]
 local close_output_port = racket["close-output-port"]
+local eof = racket["eof"]
 local eof_p = racket["eof-object?"]
 local read_bytes = racket["read-bytes"]
 local read_bytes_line = racket["read-bytes-line"]
 local write_bytes = racket["write-bytes"]
+local file_position = racket["file-position"]
 
 local file = {}
 file.__name = "file"
@@ -26,8 +28,23 @@ function file.new(path, inp, out)
     return o
 end
 
+function file:close()
+    if self._inp then
+        close_input_port(self._inp)
+    elseif self._out then
+        close_output_port(self._out)
+    end
+end
+
 function file:isclosed()
     return port_closed_p(self._inp or self._out)
+end
+
+function file:flush()
+    if not self._out then
+        error("file:flush: not writable")
+    end
+    flush_output(self._out)
 end
 
 function file:read(...)
@@ -69,18 +86,32 @@ function file:write(...)
     end
 end
 
-function file:flush()
-    if not self._out then
-        error("file:flush: not writable")
+function file:seek(whence, offset)
+    whence = whence or "curr"
+    offset = offset or 0
+    local port = self._inp or self._out
+    if whence == "curr" then
+        return file_position(port) + offset
+    elseif whence == "set" then
+        file_position(port, offset)
+        return offset
+    elseif whence == "end" then
+        file_position(port, eof)
+        local pos = file_position(port) - offset
+        file_position(port, pos)
+        return pos
+    else
+        error("file:seek: whence must be 'curr', 'set' or 'end'", whence)
     end
-    flush_output(self._out)
 end
 
-function file:close()
-    if self._inp then
-        close_input_port(self._inp)
-    elseif self._out then
-        close_output_port(self._out)
+function file:lines(...)
+    local fmt = {...}
+    if #fmt == 0 then
+        fmt = {"l"}
+    end
+    return function()
+        return self:read(table.unpack(fmt))
     end
 end
 
