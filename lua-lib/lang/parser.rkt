@@ -254,9 +254,25 @@
   (define tok
     (lexer-peek l))
   (match tok
+    [(colon)
+     (skip l 'colon)
+     (define name (parse-name l))
+     (define args
+       (match (lexer-peek l)
+         [(lcubrace)
+          (list (parse-table l))]
+         [(string s)
+          (begin0 (list s)
+            (expect l 'string))]
+         [_
+          (parse-args l)]))
+     (parse-primaryexpr l (CallMethod (token-loc tok) e name args))]
     [(dot)
      (skip l 'dot)
      (parse-primaryexpr l (Attribute (token-loc tok) e (parse-name l)))]
+    [(lcubrace)
+     (define table (parse-table l))
+     (parse-primaryexpr l (Call (token-loc tok) e (list table)))]
     [(lsqbrace)
      (skip l 'lsqbrace)
      (define sub-e (parse-expr l))
@@ -264,11 +280,9 @@
      (parse-primaryexpr l (Subscript (token-loc tok) e sub-e))]
     [(lparen)
      (parse-primaryexpr l (Call (token-loc tok) e (parse-args l)))]
-    [(colon)
-     (skip l 'colon)
-     (define name (parse-name l))
-     (define args (parse-args l))
-     (parse-primaryexpr l (CallMethod (token-loc tok) e name args))]
+    [(string s)
+     (expect l 'string)
+     (parse-primaryexpr l (Call (token-loc tok) e (list s)))]
     [_ e]))
 
 (define (parse-prefixexp l)
