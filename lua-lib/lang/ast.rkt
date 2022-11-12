@@ -51,6 +51,7 @@
   [LocalAssignment (name expr)]
   [LocalFunction (name params block)]
   [MethodDef (name attr params block)]
+  [Name (symbol)]
   [Repeat (cond-expr block)]
   [Return (exprs)]
   [Subscript (e sub-e)]

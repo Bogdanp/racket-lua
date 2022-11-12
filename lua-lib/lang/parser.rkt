@@ -136,7 +136,7 @@
      (define loc (token-loc (expect l 'keyword 'function)))
      (define function
        (match (parse-funcname l)
-         [(? symbol? name)
+         [(? Name? name)
           (FuncDef loc name (parse-params l) (parse-block l))]
          [(? list? names)
           (FuncDef loc names (parse-params l) (parse-block l))]
@@ -305,7 +305,9 @@
             (loop (step rhs-e next-prec))]
 
            [_
-            (step (Binop (token-loc tok) (token-val tok) lhs-e rhs-e) depth)]))]
+            (define loc (token-loc tok))
+            (define name (Name loc (token-val tok)))
+            (step (Binop loc name lhs-e rhs-e) depth)]))]
       [_ lhs-e])))
 
 (define (parse-term l)
@@ -353,9 +355,11 @@
       [(-) '#%negate]
       [else (error 'parse-unary-expr "bad id: ~a" id)]))
   (define tok (expect l 'op id))
+  (define loc (token-loc tok))
   (define prec (precedence op))
   (define expr (parse-expr l (parse-term l) prec))
-  (Unop (token-loc tok) op expr))
+  (define name (Name loc op))
+  (Unop loc name expr))
 
 (define (parse-args l)
   (match (lexer-peek l)
@@ -452,7 +456,7 @@
      (define name-or-expr (parse-primaryexpr l))
      (match (lexer-peek l)
        [(op '=)
-        #:when (symbol? name-or-expr)
+        #:when (Name? name-or-expr)
         (define name name-or-expr)
         (skip l 'op '=)
         (define expr (parse-expr l))
@@ -481,7 +485,10 @@
       [_ (reverse (cons name names))])))
 
 (define (parse-name l)
-  (token-val (expect l 'name)))
+  (define tok
+    (expect l 'name))
+  (Name (token-loc tok)
+        (token-val tok)))
 
 
 ;; helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

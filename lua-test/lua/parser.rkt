@@ -38,42 +38,42 @@
     (check-parse
      ";;;print(1);;print(a)"
      (Block
-      ((Call print (1))
-       (Call print (a))))))
+      ((Call (Name print) (1))
+       (Call (Name print) ((Name a)))))))
 
    (test-suite
     "assignment"
 
-    (check-parse "a = 1" (Block ((Assignment (a) (1)))))
-    (check-parse "a, b = 1" (Block ((Assignment (a b) (1)))))
-    (check-parse "a = 1, 'b'" (Block ((Assignment (a) (1 #"b")))))
+    (check-parse "a = 1" (Block ((Assignment ((Name a)) (1)))))
+    (check-parse "a, b = 1" (Block ((Assignment ((Name a) (Name b)) (1)))))
+    (check-parse "a = 1, 'b'" (Block ((Assignment ((Name a)) (1 #"b")))))
     (check-parse
      "foo()['a'] = 1"
      (Block
       ((Assignment
-        ((Subscript (Call foo ()) #"a"))
+        ((Subscript (Call (Name foo) ()) #"a"))
         (1)))))
     (check-parse
      "foo()['a'], bar:baz()['c'] = 2, a:b():c()"
      (Block
       ((Assignment
-        ((Subscript (Call foo ()) #"a")
-         (Subscript (CallMethod bar baz ()) #"c"))
+        ((Subscript (Call (Name foo) ()) #"a")
+         (Subscript (CallMethod (Name bar) (Name baz) ()) #"c"))
         (2
-         (CallMethod (CallMethod a b ()) c ())))))))
+         (CallMethod (CallMethod (Name a) (Name b) ()) (Name c) ())))))))
 
    (test-suite
     "function call"
 
     (check-parse
      "print('hello')"
-     (Block ((Call print (#"hello")))))
+     (Block ((Call (Name print) (#"hello")))))
     (check-parse
      "Account.withdraw(a, 1)"
-     (Block ((Call (Attribute Account withdraw) (a 1)))))
+     (Block ((Call (Attribute (Name Account) (Name withdraw)) ((Name a) 1)))))
     (check-parse
      "a:withdraw(1)"
-     (Block ((CallMethod a withdraw (1))))))
+     (Block ((CallMethod (Name a) (Name withdraw) (1))))))
 
    (test-suite
     "expression"
@@ -81,29 +81,29 @@
     (test-suite
      "unary ops"
 
-     (check-parse "print(not true)" (Block ((Call print ((Unop not #t))))))
-     (check-parse "print(#table)" (Block ((Call print ((Unop #%length table))))))
-     (check-parse "print(~42)" (Block ((Call print ((Unop #%bnegate 42))))))
+     (check-parse "print(not true)" (Block ((Call (Name print) ((Unop (Name not) #t))))))
+     (check-parse "print(#table)" (Block ((Call (Name print) ((Unop (Name #%length) (Name table)))))))
+     (check-parse "print(~42)" (Block ((Call (Name print) ((Unop (Name #%bnegate) 42))))))
      (check-parse
       "print(not true and false)"
       (Block
-       ((Call print ((Binop and (Unop not #t) #f))))))
+       ((Call (Name print) ((Binop (Name and) (Unop (Name not) #t) #f))))))
      (check-parse
       "print(not (true and false))"
       (Block
-       ((Call print ((Unop not (Binop and #t #f)))))))
+       ((Call (Name print) ((Unop (Name not) (Binop (Name and) #t #f)))))))
      (check-parse
       "print(#table > 5)"
       (Block
-       ((Call print ((Binop > (Unop #%length table) 5))))))
+       ((Call (Name print) ((Binop (Name >) (Unop (Name #%length) (Name table)) 5))))))
      (check-parse
       "print(~x^2)"
       (Block
-       ((Call print ((Unop #%bnegate (Binop ^ x 2)))))))
+       ((Call (Name print) ((Unop (Name #%bnegate) (Binop (Name ^) (Name x) 2)))))))
      (check-parse
       "print(~x^2 + 3)"
       (Block
-       ((Call print ((Binop + (Unop #%bnegate (Binop ^ x 2)) 3)))))))
+       ((Call (Name print) ((Binop (Name +) (Unop (Name #%bnegate) (Binop (Name ^) (Name x) 2)) 3)))))))
 
     (test-suite
      "binary ops"
@@ -111,56 +111,101 @@
      (check-parse
       "print(1 + 2 * (3 - 4 // 2 ^ 2) == 12 and false or true)"
       (Block
-       ((Call print ((Binop or
-                            (Binop and
-                                   (Binop ==
-                                          (Binop +
-                                                 1
-                                                 (Binop *
-                                                        2
-                                                        (Binop -
-                                                               3
-                                                               (Binop //
-                                                                      4
-                                                                      (Binop ^ 2 2)))))
-                                          12)
-                                   #f)
-                            #t))))))
+       ((Call
+         (Name print)
+         ((Binop
+           (Name or)
+           (Binop
+            (Name and)
+            (Binop
+             (Name ==)
+             (Binop
+              (Name +)
+              1
+              (Binop
+               (Name *)
+               2
+               (Binop
+                (Name -)
+                3
+                (Binop
+                 (Name //)
+                 4
+                 (Binop (Name ^) 2 2)))))
+             12)
+            #f)
+           #t))))))
 
 
      (check-parse
       "print(1 + 2 * (3 - 4 // 2 ^ 2) == 12 and not false or true)"
       (Block
-       ((Call print ((Binop or
-                            (Binop and
-                                   (Binop ==
-                                          (Binop +
-                                                 1
-                                                 (Binop *
-                                                        2
-                                                        (Binop -
-                                                               3
-                                                               (Binop //
-                                                                      4
-                                                                      (Binop ^ 2 2)))))
-                                          12)
-                                   (Unop not #f))
-                            #t))))))
+       ((Call
+         (Name print)
+         ((Binop
+           (Name or)
+           (Binop
+            (Name and)
+            (Binop
+             (Name ==)
+             (Binop
+              (Name +)
+              1
+              (Binop
+               (Name *)
+               2
+               (Binop
+                (Name -)
+                3
+                (Binop
+                 (Name //)
+                 4
+                 (Binop (Name ^) 2 2)))))
+             12)
+            (Unop (Name not) #f))
+           #t))))))
 
      (check-parse
       "print(1 + 2 ^ 3 ^ 4)"
       (Block
-       ((Call print ((Binop + 1 (Binop ^ 2 (Binop ^ 3 4))))))))
+       ((Call
+         (Name print)
+         ((Binop
+           (Name +)
+           1
+           (Binop
+            (Name ^)
+            2
+            (Binop
+             (Name ^)
+             3
+             4))))))))
 
      (check-parse
       "print('a' .. 'b' .. 'c')"
       (Block
-       ((Call print ((Binop .. #"a" (Binop .. #"b" #"c")))))))
+       ((Call
+         (Name print)
+         ((Binop
+           (Name ..)
+           #"a"
+           (Binop
+            (Name ..)
+            #"b"
+            #"c")))))))
 
      (check-parse
       "print(('a' .. 'b') .. 'c')"
       (Block
-       ((Call print ((Binop .. (Binop .. #"a" #"b") #"c")))))))
+       ((Call
+         (Name print)
+         ((Binop
+           (Name ..)
+           (Binop
+            (Name ..)
+            #"a"
+            #"b")
+           #"c")))))))
 
     (test-suite
      "function"
@@ -172,7 +217,9 @@ print(function()
 end)
 EOF
       (Block
-       ((Call print ((Func () (Block ((Return (42))))))))))
+       ((Call
+         (Name print)
+         ((Func () (Block ((Return (42))))))))))
 
      (check-parse
       #<<EOF
@@ -182,7 +229,7 @@ end)(42)
 EOF
       (Block
        ((Call
-         (Func (x) (Block ((Return ((Binop + x x))))))
+         (Func ((Name x)) (Block ((Return ((Binop (Name +) (Name x) (Name x)))))))
          (42)))))
 
      (check-parse
@@ -193,24 +240,23 @@ end)(42)
 EOF
       (Block
        ((Call
-         (Func (x) (Block ((Return ((Binop + x x) 42)))))
+         (Func ((Name x)) (Block ((Return ((Binop (Name +) (Name x) (Name x)) 42)))))
          (42))))))
-
     (test-suite
      "table"
 
-     (check-parse "print({})" (Block ((Call print ((Table ()))))))
-     (check-parse "print({1, 2, 3})" (Block ((Call print ((Table ((Field 1) (Field 2) (Field 3))))))))
+     (check-parse "print({})" (Block ((Call (Name print) ((Table ()))))))
+     (check-parse "print({1, 2, 3})" (Block ((Call (Name print) ((Table ((Field 1) (Field 2) (Field 3))))))))
 
      (check-parse
       "t = {1, [0 + 1] = 1, foo = 2}"
       (Block
        ((Assignment
-         (t)
+         ((Name t))
          ((Table
            ((Field 1)
-            (FieldExpr (Binop + 0 1) 1)
-            (FieldLit foo 2))))))))))))
+            (FieldExpr (Binop (Name +) 0 1) 1)
+            (FieldLit (Name foo) 2))))))))))))
 
 (module+ test
   (require rackunit/text-ui)
