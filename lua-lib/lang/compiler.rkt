@@ -532,12 +532,15 @@
 (define (maybe-void stmts)
   (if (null? stmts) '((#%void)) stmts))
 
-(define ((make-statement-walker base-proc) e)
+(define ((make-statement-walker base-proc [enter-loops? #t]) e)
   (let loop ([e e])
     (match e
       [(Block _ stmts)
        (ormap loop stmts)]
       [(Do _ block)
+       (loop block)]
+      [(For _ _ _ _ _ block)
+       #:when enter-loops?
        (loop block)]
       [(If _ _ then-block #f)
        (loop then-block)]
@@ -546,13 +549,17 @@
            (loop else-block))]
       [(Let _ _ _ stmts)
        (ormap loop stmts)]
+      [(Repeat _ _ block)
+       #:when enter-loops?
+       (loop block)]
       [(While _ _ block)
+       #:when enter-loops?
        (loop block)]
       [_
        (base-proc e)])))
 
 (define needs-break?
-  (make-statement-walker Break?))
+  (make-statement-walker Break? #f))
 (define needs-return?
   (make-statement-walker Return?))
 
