@@ -371,7 +371,7 @@
   [((CallMethod loc target-expr attr arg-exprs))
    (define subscript-expr (Subscript loc '#%instance (symbol->bytes attr)))
    (with-syntax ([target-expr (compile-expr* target-expr)]
-                 [call-expr (compile-expr* (Call loc subscript-expr (cons '#%instance arg-exprs)))])
+                 [call-expr (compile-expr (Call loc subscript-expr (cons '#%instance arg-exprs)))])
      (syntax/loc loc
        (#%let ([#%instance target-expr]) call-expr)))]
 
@@ -433,7 +433,7 @@
 (define-match-expander vararg
   (lambda (stx)
     (syntax-parse stx
-      [(_ e) #'(and (or (? Call?) '#%rest) e)])))
+      [(_ e) #'(and (or (? Call?) (? CallMethod?) '#%rest) e)])))
 
 (define symbol->bytes
   (compose1 string->bytes/utf-8 symbol->string))
