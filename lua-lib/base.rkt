@@ -18,6 +18,7 @@
  #%app
  #%datum
  #%declare
+ #%top-interaction
  (rename-out
   [apply #%apply]
   [begin #%begin]
@@ -68,6 +69,7 @@
   [lua:negate #%negate]
   [lua:not not]
   [lua:or or]
+  [lua:procedure-rename #%procedure-rename]
   [lua:set! #%set!]
   [lua:subscript #%subscript]
   [lua:top #%top]
@@ -150,3 +152,8 @@
           (require lua/lang/runtime-config))
         (#%declare #:realm lua)
         form ...)]))
+
+(define-syntax (lua:procedure-rename stx)
+  (syntax-parse stx
+    [(_ proc:expr name:id)
+     #'(procedure-rename proc 'name 'lua)]))

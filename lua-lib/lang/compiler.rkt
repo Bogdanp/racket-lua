@@ -2,8 +2,10 @@
 
 (require (for-syntax racket/base
                      syntax/parse)
+         racket/format
          racket/list
          racket/match
+         racket/string
          racket/syntax
          "ast.rkt")
 
@@ -153,16 +155,18 @@
     (Let loc '(#%iter #%state #%control #%closing) exprs (list protect-stmt)))]
 
   [((FuncDef loc (? list? names) params block))
-   (compile-statement
-    (Assignment loc
-                (list (names->subscripts loc names))
-                (list (Func loc params block))))]
+   (parameterize ([current-procedure-name (names->procedure-name names)])
+     (compile-statement
+      (Assignment loc
+                  (list (names->subscripts loc names))
+                  (list (Func loc params block)))))]
 
   [((FuncDef loc name params block))
-   (compile-statement
-    (Assignment loc
-                (list name)
-                (list (Func loc params block))))]
+   (parameterize ([current-procedure-name name])
+     (compile-statement
+      (Assignment loc
+                  (list name)
+                  (list (Func loc params block)))))]
 
   [((Goto loc name))
    (with-syntax ([name (format-label-id name)])
@@ -253,10 +257,11 @@
          stmt ...)))]
 
   [((MethodDef loc names attr params block))
-   (compile-statement
-    (Assignment loc
-                (list (Subscript loc (names->subscripts loc names) (symbol->bytes attr)))
-                (list (Func loc (cons 'self params) block))))]
+   (parameterize ([current-procedure-name (names->method-name names attr)])
+     (compile-statement
+      (Assignment loc
+                  (list (Subscript loc (names->subscripts loc names) (symbol->bytes attr)))
+                  (list (Func loc (cons 'self params) block)))))]
 
   [((Protect loc value-stmts post-stmts))
    (with-syntax ([(value-stmt ...) (maybe-void (map compile-statement value-stmts))]
@@ -331,18 +336,24 @@
    (compile-call e)]
 
   [((Func loc (list params ... '...) block))
-   (with-syntax ([(param ...) params]
+   (with-syntax ([procedure-name (current-procedure-name)]
+                 [(param ...) params]
                  [block (compile-block block)])
      (syntax/loc loc
-       (#%lambda ([param nil] ... . #%rest)
-         (#%let/cc #%return block))))]
+       (#%procedure-rename
+        (#%lambda ([param nil] ... . #%rest)
+          (#%let/cc #%return block))
+        procedure-name)))]
 
   [((Func loc params block))
-   (with-syntax ([(param ...) params]
+   (with-syntax ([procedure-name (current-procedure-name)]
+                 [(param ...) params]
                  [block (compile-block block)])
      (syntax/loc loc
-       (#%lambda ([param nil] ... . #%unused-rest)
-         (#%let/cc #%return block))))]
+       (#%procedure-rename
+        (#%lambda ([param nil] ... . #%unused-rest)
+          (#%let/cc #%return block))
+        procedure-name)))]
 
   [((Subscript loc expr field-expr))
    (with-syntax ([expr (compile-expr* expr)]
@@ -489,3 +500,14 @@
 
 (define (maybe-void stmts)
   (if (null? stmts) '((#%void)) stmts))
+
+;; procedure names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define current-procedure-name
+  (make-parameter 'anon))
+
+(define (names->procedure-name names)
+  (string->symbol (string-join (map symbol->string names) ".")))
+
+(define (names->method-name names attr)
+  (string->symbol (~a (string-join (map symbol->string names) ".") ":" attr)))
