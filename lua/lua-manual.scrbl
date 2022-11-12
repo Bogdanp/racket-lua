@@ -207,4 +207,9 @@ they do not overflow.
   functionality (eg. file i/o), or you may add new modules to the set
   to inject your own functionality.  The modules are loaded in order,
   and there may be dependencies from latter modules to earlier ones.
+
+  Modules in this list are typically only instantiated once so they
+  must not modify the global environment because the global
+  environment may change to a fresh table after these modules are
+  loaded for the first time.
 }
