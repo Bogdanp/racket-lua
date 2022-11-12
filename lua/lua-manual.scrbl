@@ -4,7 +4,8 @@
           (for-label lua/env
                      lua/value
                      racket/base
-                     racket/contract))
+                     racket/contract
+                     racket/sandbox))
 
 @title{Lua}
 @author[(author+email "Bogdan Popa" "bogdan@defn.io")]
@@ -19,6 +20,7 @@ progress, but much of the core language is supported already.
 
 
 @section{Calling Lua from Racket}
+@subsection{Requiring Modules}
 
 Lua modules can be imported directly from Racket.  Every Lua module
 provides a single value called @racket[#%chunk] which represents the
@@ -43,6 +45,34 @@ You can use it from Racket like so:
 (add1 5)
 ]
 
+@subsection{Evaluating Code at Runtime}
+
+You can run Lua code at runtime using @racketmodname[racket/sandbox].
+For example:
+
+@examples[
+#:label #f
+  (require racket/sandbox
+           racket/string)
+
+  (let ([lua-eval (make-module-evaluator "#lang lua\nreturn 42")])
+    (lua-eval '#%chunk))
+
+  (define dangerous-prog
+    (string-join
+     '("#lang lua"
+       ""
+       "return io.input('/etc/passwd'):read('a')")
+     "\n"))
+
+  (eval:error
+   (let ([lua-eval (make-module-evaluator dangerous-prog)])
+     (lua-eval '#%chunk)))
+
+  (let ([lua-eval (parameterize ([sandbox-path-permissions '((read #rx#".*"))])
+                    (make-module-evaluator dangerous-prog))])
+    (subbytes (lua-eval '#%chunk) 0 5))
+]
 
 @section{Calling Racket from Lua}
 
@@ -149,6 +179,12 @@ they do not overflow.
 @subsection{Environments}
 @defmodule[lua/env]
 
+@defproc[(make-initial-environment) table?]{
+  Returns a @racket[table?] representing the initial environment.
+  This procedure creates a new table each time it is called, but the
+  values inside it may be shared between calls.
+}
+
 @defparam[current-racket-imports-enabled? enabled? boolean? #:value #f]{
   Controls whether or not Lua modules can access Racket code via the
   @tt{racket} global.  Defaults to @racket[#f], except during the time
@@ -161,6 +197,14 @@ they do not overflow.
   evaluated.
 }
 
-@defproc[(make-initial-environment) table?]{
-  Returns a @racket[table?] representing the initial environment.
+@defparam[current-standard-library-modules modules
+                                           (listof (cons/c bytes?
+                                                           (or/c module-path?
+                                                                 resolved-module-path?
+                                                                 module-path-index?)))]{
+  Holds the set of modules that are loaded into every Lua module.  You
+  can remove values from this set in order to disable certain bits of
+  functionality (eg. file i/o), or you may add new modules to the set
+  to inject your own functionality.  The modules are loaded in order,
+  and there may be dependencies from latter modules to earlier ones.
 }
