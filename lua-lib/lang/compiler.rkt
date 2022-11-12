@@ -13,22 +13,26 @@
  compile-chunk)
 
 (define (compile-chunk chunk)
+  (define loc (Node-loc chunk))
+  (define return? (needs-return? chunk))
   (with-syntax ([block (compile-block chunk)])
-    (syntax/loc* (Node-loc chunk)
-      ((#%provide #%chunk)
-       (#%define _ENV (#%global))
-       (#%load-stdlib! _ENV)
-       (#%define (#%lua-module . #%rest)
-         (#%let/cc #%return
-           block))
-       (#%define #%chunk
-         (#%adjust (#%lua-module)))))))
+    (with-syntax ([body (if return?
+                            (syntax/loc* loc (#%let/cc #%return block (#%values)))
+                            (syntax/loc* loc (#%begin block (#%values))))])
+      (syntax/loc* loc
+        ((#%provide #%chunk)
+         (#%define _ENV (#%global))
+         (#%load-stdlib! _ENV)
+         (#%define (#%lua-module . #%rest)
+           body)
+         (#%define #%chunk
+           (#%adjust (#%lua-module))))))))
 
 (define/match (compile-block _)
   [((Block loc stmts))
    (with-syntax ([(statement ...) (map compile-statement (Lua->L1 stmts))])
      (syntax/loc* loc
-       (#%begin statement ... (#%values))))])
+       (#%begin statement ...)))])
 
 (define/match (compile-statement e)
   [((Assignment loc vars (list exprs ... (vararg vararg-expr))))
@@ -108,25 +112,29 @@
        (#%let () block)))]
 
   [((For loc name init-expr limit-expr step-expr block))
+   (define break? (needs-break? block))
    (with-syntax ([name (compile-expr name)]
                  [init-expr (compile-expr init-expr)]
                  [limit-expr (compile-expr limit-expr)]
                  [step-expr (compile-expr step-expr)]
                  [block (compile-block block)])
-     (syntax/loc* loc
-       (#%let/cc #%break
-         (#%let
-           ([#%init init-expr]
-            [#%limit limit-expr]
-            [#%step step-expr])
-           (#%let #%for ([name #%init])
-             (#%when
-               (#%cond
-                 [(< #%step 0) (>= name #%limit)]
-                 [(> #%step 0) (<= name #%limit)]
-                 [#%else (#%error "for: zero step")])
-               block
-               (#%for (+ name #%step))))))))]
+     (with-syntax ([loop
+                    (syntax/loc* loc
+                      (#%let
+                        ([#%init init-expr]
+                         [#%limit limit-expr]
+                         [#%step step-expr])
+                        (#%let #%for ([name #%init])
+                          (#%when
+                            (#%cond
+                              [(< #%step 0) (>= name #%limit)]
+                              [(> #%step 0) (<= name #%limit)]
+                              [#%else (#%error "for: zero step")])
+                            block
+                            (#%for (+ name #%step))))))])
+       (if break?
+           (syntax/loc* loc (#%let/cc #%break loop))
+           (syntax/loc* loc loop))))]
 
   [((ForIn loc names exprs block))
    (define protect-stmt
@@ -205,8 +213,7 @@
                   (for/list ([idx (in-naturals)]
                              [var (in-list vars)]
                              [expr (in-list exprs)])
-                    (define temp (format-id #f "#%temp~a" idx))
-                    (list temp
+                    (list (format-id #f "#%temp~a" idx)
                           (compile-expr var)
                           (compile-expr* expr)))]
                  [vararg-expr (compile-expr vararg-expr)]
@@ -215,8 +222,7 @@
                     (for/list ([tmp-idx (in-naturals start)]
                                [tbl-idx (in-naturals)]
                                [var (in-list (drop vars start))])
-                      (define temp (format-id #f "#%temp~a" tmp-idx))
-                      (list temp
+                      (list (format-id #f "#%temp~a" tmp-idx)
                             (compile-expr var)
                             (add1 tbl-idx))))]
                  [(stmt ...) (maybe-void (map compile-statement stmts))])
@@ -279,14 +285,18 @@
          (#%lambda () post-stmt ...))))]
 
   [((Repeat loc cond-expr block))
+   (define break? (needs-break? block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
-     (syntax/loc* loc
-       (#%let/cc #%break
-         (#%let #%repeat ()
-           block
-           (#%unless cond-expr
-             (#%repeat))))))]
+     (with-syntax ([loop
+                    (syntax/loc* loc
+                      (#%let #%repeat ()
+                        block
+                        (#%unless cond-expr
+                          (#%repeat))))])
+       (if break?
+           (syntax/loc* loc (#%let/cc #%break loop))
+           (syntax/loc* loc loop))))]
 
   [((Return loc (list exprs ... (vararg vararg-expr))))
    (with-syntax ([(expr ...) (map compile-expr* exprs)]
@@ -300,14 +310,18 @@
        (#%return expr ...)))]
 
   [((While loc cond-expr block))
+   (define break? (needs-break? block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
-     (syntax/loc* loc
-       (#%let/cc #%break
-         (#%let #%while ()
-           (#%when cond-expr
-             block
-             (#%while))))))])
+     (with-syntax ([loop
+                    (syntax/loc* loc
+                      (#%let #%while ()
+                        (#%when cond-expr
+                          block
+                          (#%while))))])
+       (if break?
+           (syntax/loc* loc (#%let/cc #%break loop))
+           (syntax/loc* loc loop))))])
 
 (define/match (compile-expr* e)
   [((or (Call loc _ _)
@@ -342,24 +356,32 @@
    (compile-call e)]
 
   [((Func loc (list params ... '...) block))
+   (define return? (needs-return? block))
    (with-syntax ([procedure-name (current-procedure-name)]
                  [(param ...) (map compile-expr params)]
                  [block (compile-block block)])
-     (syntax/loc* loc
-       (#%procedure-rename
-        (#%lambda ([param nil] ... . #%rest)
-          (#%let/cc #%return block))
-        procedure-name)))]
+     (with-syntax ([body (if return?
+                             (syntax/loc* loc (#%let/cc #%return block (#%values)))
+                             (syntax/loc* loc (#%begin block (#%values))))])
+       (syntax/loc* loc
+         (#%procedure-rename
+          (#%lambda ([param nil] ... . #%rest)
+            body)
+          procedure-name))))]
 
   [((Func loc params block))
+   (define return? (needs-return? block))
    (with-syntax ([procedure-name (current-procedure-name)]
                  [(param ...) (map compile-expr params)]
                  [block (compile-block block)])
-     (syntax/loc* loc
-       (#%procedure-rename
-        (#%lambda ([param nil] ... . #%unused-rest)
-          (#%let/cc #%return block))
-        procedure-name)))]
+     (with-syntax ([body (if return?
+                             (syntax/loc* loc (#%let/cc #%return block (#%values)))
+                             (syntax/loc* loc (#%begin block (#%values))))])
+       (syntax/loc* loc
+         (#%procedure-rename
+          (#%lambda ([param nil] ... . #%unused-rest)
+            body)
+          procedure-name))))]
 
   [((Name loc symbol))
    (datum->syntax #f symbol loc (get-original-stx))]
@@ -509,6 +531,30 @@
 
 (define (maybe-void stmts)
   (if (null? stmts) '((#%void)) stmts))
+
+(define ((make-statement-walker base-proc) e)
+  (let loop ([e e])
+    (match e
+      [(Block _ stmts)
+       (ormap loop stmts)]
+      [(Do _ block)
+       (loop block)]
+      [(If _ _ then-block #f)
+       (loop then-block)]
+      [(If _ _ then-block else-block)
+       (or (loop then-block)
+           (loop else-block))]
+      [(Let _ _ _ stmts)
+       (ormap loop stmts)]
+      [(While _ _ block)
+       (loop block)]
+      [_
+       (base-proc e)])))
+
+(define needs-break?
+  (make-statement-walker Break?))
+(define needs-return?
+  (make-statement-walker Return?))
 
 
 ;; procedure names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
