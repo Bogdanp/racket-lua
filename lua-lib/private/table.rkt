@@ -11,6 +11,7 @@
 (provide
  table?
  make-table
+ table-ht
  table-length
  table-meta-ref
  table-ref
@@ -18,6 +19,7 @@
  table-set!
  lua:rawset
  table-keys
+ table-values
 
  lua:getmetatable
  lua:setmetatable)
@@ -106,6 +108,9 @@
         (hash-set! (table-ht t) k v))))
 
 (define (table-keys t)
+  (hash-keys (table-ht t)))
+
+(define (table-values t)
   (hash-keys (table-ht t)))
 
 (define (lua:getmetatable t . _)

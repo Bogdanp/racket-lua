@@ -4,6 +4,7 @@
          racket/runtime-path
          "error.rkt"
          "iter.rkt"
+         "json.rkt"
          "length.rkt"
          "number.rkt"
          "relation.rkt"
@@ -59,6 +60,7 @@
      `(#"error"        . ,lua:error)
      `(#"getmetatable" . ,lua:getmetatable)
      `(#"ipairs"       . ,lua:ipairs)
+     `(#"json"         . ,(make-json-module))
      `(#"next"         . ,lua:next)
      `(#"pairs"        . ,lua:pairs)
      `(#"pcall"        . ,lua:pcall)
