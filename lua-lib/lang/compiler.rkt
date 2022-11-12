@@ -362,7 +362,7 @@
         procedure-name)))]
 
   [((Name loc symbol))
-   (datum->syntax #f symbol loc #'id)]
+   (datum->syntax #f symbol loc (get-original-stx))]
 
   [((Subscript loc expr field-expr))
    (with-syntax ([expr (compile-expr* expr)]
@@ -546,3 +546,13 @@
      (datum->syntax #f content with-loc stx)]
     [else
      stx]))
+
+;; The 'original property on syntax is not preserved in compiled code.
+;; This procedure works around that problem by calling `read-syntax'
+;; at runtime for every newly-compiled module.
+(define get-original-stx
+  (let ([stx #f])
+    (lambda ()
+      (unless stx
+        (set! stx (read-syntax "<compiler>" (open-input-string "id"))))
+      stx)))
