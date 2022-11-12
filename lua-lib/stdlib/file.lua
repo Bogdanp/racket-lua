@@ -1,42 +1,86 @@
 #lang lua
 
-local input_port_p = racket["input-port?"]
-local output_port_p = racket["output-port?"]
 local flush_output = racket["flush-output"]
+local port_to_bytes = racket.lib("racket/port", "port->bytes")
+local port_closed_p = racket["port-closed?"]
 local close_input_port = racket["close-input-port"]
 local close_output_port = racket["close-output-port"]
+local eof_p = racket["eof-object?"]
+local read_bytes = racket["read-bytes"]
+local read_bytes_line = racket["read-bytes-line"]
 local write_bytes = racket["write-bytes"]
 
 local file = {}
 file.__name = "file"
 file.__index = file
-function file._open(p)
-    local o = {_port = p}
+function file.new(path, inp, out)
+    if inp and out then
+        error("file.new: either inp or out args must be provided, but not both")
+    end
+    local o = {
+        path = path,
+        _inp = inp,
+        _out = out
+    }
     setmetatable(o, file)
     return o
 end
 
-function file:write(...)
-    if not output_port_p(self._port) then
-        error("file:write: not writable")
+function file:isclosed()
+    return port_closed_p(self._inp or self._out)
+end
+
+function file:read(...)
+    if not self._inp then
+        error("file:read: not readable")
+    elseif self:isclosed() then
+        error("file:read: closed")
     end
-    local port = self._port
+    local function go(fmt, ...)
+        if fmt ~= nil then
+            local res
+            if fmt == "a" then
+                res = port_to_bytes(self._inp)
+            elseif fmt == "l" then
+                res = read_bytes_line(self._inp)
+            elseif type(fmt) == "number" then
+                res = read_bytes(fmt, self._inp)
+            else
+                error("file:read: invalid format")
+            end
+            if eof_p(res) then
+                return nil
+            end
+            return res, go(...)
+        end
+    end
+    return go(...)
+end
+
+function file:write(...)
+    if not self._out then
+        error("file:write: not writable")
+    elseif self:isclosed() then
+        error("file:write: closed")
+    end
+    local port = self._out
     for _, arg in ipairs({...}) do
         write_bytes(tostring(arg), port)
     end
 end
 
 function file:flush()
-    if output_port_p(self._port) then
-        flush_output(self._port)
+    if not self._out then
+        error("file:flush: not writable")
     end
+    flush_output(self._out)
 end
 
 function file:close()
-    if input_port_p(self._port) then
-        close_input_port(self._port)
-    else
-        close_output_port(self._port)
+    if self._inp then
+        close_input_port(self._inp)
+    elseif self._out then
+        close_output_port(self._out)
     end
 end
 

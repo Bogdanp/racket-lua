@@ -8,6 +8,9 @@ end
 
 local racket = {}
 setmetatable(racket, Racket)
+function racket.lib(mod, id)
+    return require(id, mod)
+end
 
 local list = racket.list
 local null = racket.null

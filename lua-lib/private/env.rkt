@@ -20,13 +20,20 @@
 (define current-racket-imports-enabled?
   (make-parameter #f))
 
-(define-runtime-module-path-index racket/base
-  'racket/base)
+(define-runtime-module-path-index racket/base 'racket/base)
+(define-runtime-module-path-index racket/file 'racket/file)
+(define-runtime-module-path-index racket/port 'racket/port)
 
-(define (require-racket id-bytes)
+(define (require-racket id-bytes [mod #"racket/base"])
   (unless (current-racket-imports-enabled?)
     (lua:error "require_racket: disabled"))
-  (dynamic-require racket/base (string->symbol (bytes->string/utf-8 id-bytes))))
+  (dynamic-require
+   (case mod
+     [(#"racket/base") racket/base]
+     [(#"racket/file") racket/file]
+     [(#"racket/port") racket/port]
+     [else (string->symbol (bytes->string/utf-8 mod))])
+   (string->symbol (bytes->string/utf-8 id-bytes))))
 
 (define lua:racket
   (make-table `(#"#%require" . ,require-racket)))
@@ -93,12 +100,12 @@
     `(#"racket"    . ,racket.lua)    ;; everything depends on racket.lua
 
     `(#"file"      . ,file.lua)
+    `(#"os"        . ,os.lua)
     `(#"table"     . ,table.lua)
 
     `(#"coroutine" . ,coroutine.lua) ;; depends on table.lua
-    `(#"io"        . ,io.lua)        ;; depends on file.lua
+    `(#"io"        . ,io.lua)        ;; depends on file.lua and os.lua
     `(#"math"      . ,math.lua)
-    `(#"os"        . ,os.lua)
     `(#"string"    . ,string.lua))))
 
 (define (load-standard-library! env)

@@ -110,7 +110,9 @@
 
 (define (lua:getmetatable t . _)
   (define meta
-    (table-meta t))
+    (if (table? t)
+        (table-meta t)
+        nil))
   (cond
     [(nil? meta) nil]
     [else (table-ref meta #"__metatable" (λ () meta))]))
