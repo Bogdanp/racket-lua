@@ -12,9 +12,9 @@
 (provide
  compile-chunk)
 
-(define (compile-chunk chunk [execute? #t])
+(define (compile-chunk chunk)
   (with-syntax ([block (compile-block chunk)])
-    (quasisyntax/loc (Node-loc chunk)
+    (syntax/loc* (Node-loc chunk)
       ((#%provide #%chunk)
        (#%define _ENV (#%global))
        (#%load-stdlib! _ENV)
@@ -22,14 +22,12 @@
          (#%let/cc #%return
            block))
        (#%define #%chunk
-         #,(if execute?
-               #'(#%adjust (#%chunk-proc))
-               #'#%chunk-proc))))))
+         (#%adjust (#%chunk-proc)))))))
 
 (define/match (compile-block _)
   [((Block loc stmts))
    (with-syntax ([(statement ...) (map compile-statement (Lua->L1 stmts))])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%begin statement ... (#%values))))])
 
 (define/match (compile-statement e)
@@ -54,7 +52,7 @@
                       (list (format-id #f "#%temp~a" tmp-idx)
                             (compile-assignment-var var tmp-idx)
                             (add1 tbl-idx))))])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%let
          ([attr-temp attr-exp]
           ...
@@ -84,7 +82,7 @@
                       (list temp
                             (compile-assignment-var var idx)
                             (compile-expr* expr)))])
-       (syntax/loc loc
+       (syntax/loc* loc
          (#%let
            ([attr-temp attr-expr]
             ...
@@ -97,7 +95,7 @@
            (#%set! var temp) ...))))]
 
   [((Break loc))
-   (syntax/loc loc
+   (syntax/loc* loc
      (#%break))]
 
   [((or (? Call?)
@@ -106,7 +104,7 @@
 
   [((Do loc block))
    (with-syntax ([block (compile-block block)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%let () block)))]
 
   [((For loc name init-expr limit-expr step-expr block))
@@ -115,7 +113,7 @@
                  [limit-expr (compile-expr limit-expr)]
                  [step-expr (compile-expr step-expr)]
                  [block (compile-block block)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%let/cc #%break
          (#%let
            ([#%init init-expr]
@@ -170,20 +168,20 @@
 
   [((Goto loc name))
    (with-syntax ([name (format-label-id name)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (name name)))]
 
   [((If loc cond-expr then-block #f))
    (with-syntax ([cond-expr (compile-expr* cond-expr)]
                  [then-block (compile-block then-block)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%when cond-expr then-block)))]
 
   [((If loc cond-expr then-block (? If? elseif-block)))
    (with-syntax ([cond-expr (compile-expr* cond-expr)]
                  [then-block (compile-block then-block)]
                  [else-block (compile-statement elseif-block)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%cond
          [cond-expr then-block nil]
          [#%else else-block nil])))]
@@ -192,14 +190,14 @@
    (with-syntax ([cond-expr (compile-expr* cond-expr)]
                  [then-block (compile-block then-block)]
                  [else-block (compile-block else-block)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%cond
          [cond-expr then-block nil]
          [#%else else-block nil])))]
 
   [((Label loc name))
    (with-syntax ([name (format-label-id name)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%define name (#%call/cc #%values))))]
 
   [((Let loc vars (list exprs ... (vararg vararg-expr)) stmts))
@@ -218,7 +216,7 @@
                       (define temp (format-id #f "#%temp~a" tmp-idx))
                       (list var temp (add1 tbl-idx))))]
                  [(stmt ...) (maybe-void (map compile-statement stmts))])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%let
          ([temp expr]
           ...
@@ -241,7 +239,7 @@
                       (define expr (hash-ref exprs idx 'nil))
                       (list temp var (compile-expr* expr)))]
                    [(stmt ...) (maybe-void (map compile-statement stmts))])
-       (syntax/loc loc
+       (syntax/loc* loc
          (#%let
            ([temp expr] ...)
            (#%let
@@ -252,7 +250,7 @@
    (with-syntax ([name name]
                  [func-expr (compile-expr (Func loc params block))]
                  [(stmt ...) (maybe-void (map compile-statement stmts))])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%letrec ([name func-expr])
          stmt ...)))]
 
@@ -266,7 +264,7 @@
   [((Protect loc value-stmts post-stmts))
    (with-syntax ([(value-stmt ...) (maybe-void (map compile-statement value-stmts))]
                  [(post-stmt ...) (maybe-void (map compile-statement post-stmts))])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%dynamic-wind
          #%void
          (#%lambda () value-stmt ...)
@@ -275,7 +273,7 @@
   [((Repeat loc cond-expr block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%let/cc #%break
          (#%let #%repeat ()
            block
@@ -285,18 +283,18 @@
   [((Return loc (list exprs ... (vararg vararg-expr))))
    (with-syntax ([(expr ...) (map compile-expr* exprs)]
                  [vararg-expr (compile-expr vararg-expr)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%apply #%return expr ... (#%adjust-va vararg-expr))))]
 
   [((Return loc exprs))
    (with-syntax ([(expr ...) (map compile-expr* exprs)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%return expr ...)))]
 
   [((While loc cond-expr block))
    (with-syntax ([cond-expr (compile-expr cond-expr)]
                  [block (compile-block block)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%let/cc #%break
          (#%let #%while ()
            (#%when cond-expr
@@ -307,7 +305,7 @@
   [((or (Call loc _ _)
         (CallMethod loc _ _ _)))
    (with-syntax ([expr (compile-expr e)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%adjust expr)))]
 
   [(_)
@@ -322,14 +320,14 @@
   [((Attribute loc expr name))
    (with-syntax ([expr (compile-expr* expr)]
                  [name (symbol->bytes name)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%subscript expr name)))]
 
   [((Binop loc op lhs-expr rhs-expr))
    (with-syntax ([binop op]
                  [lhs-expr (compile-expr* lhs-expr)]
                  [rhs-expr (compile-expr* rhs-expr)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (binop lhs-expr rhs-expr)))]
 
   [((or (? Call?) (? CallMethod?)))
@@ -339,7 +337,7 @@
    (with-syntax ([procedure-name (current-procedure-name)]
                  [(param ...) params]
                  [block (compile-block block)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%procedure-rename
         (#%lambda ([param nil] ... . #%rest)
           (#%let/cc #%return block))
@@ -349,7 +347,7 @@
    (with-syntax ([procedure-name (current-procedure-name)]
                  [(param ...) params]
                  [block (compile-block block)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%procedure-rename
         (#%lambda ([param nil] ... . #%unused-rest)
           (#%let/cc #%return block))
@@ -358,24 +356,24 @@
   [((Subscript loc expr field-expr))
    (with-syntax ([expr (compile-expr* expr)]
                  [field-expr (compile-expr* field-expr)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%subscript expr field-expr)))]
 
   [((Table loc (list field-exprs ... (Field _ (vararg vararg-expr)))))
    (with-syntax ([(field-expr ...) (map compile-field field-exprs)]
                  [vararg-expr (compile-expr vararg-expr)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%apply #%table field-expr ... (#%adjust-va vararg-expr))))]
 
   [((Table loc field-exprs))
    (with-syntax ([(field-expr ...) (map compile-field field-exprs)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%table field-expr ...)))]
 
   [((Unop loc op expr))
    (with-syntax ([unop op]
                  [expr (compile-expr* expr)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (unop expr)))])
 
 (define/match (compile-call _e)
@@ -383,38 +381,38 @@
    (define subscript-expr (Subscript loc '#%instance (symbol->bytes attr)))
    (with-syntax ([target-expr (compile-expr* target-expr)]
                  [call-expr (compile-expr (Call loc subscript-expr (cons '#%instance arg-exprs)))])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%let ([#%instance target-expr]) call-expr)))]
 
   [((Call loc rator-expr (list rand-exprs ... (vararg vararg-expr))))
    (with-syntax ([rator-expr (compile-expr* rator-expr)]
                  [(rand-expr ...) (map compile-expr* rand-exprs)]
                  [vararg-expr (compile-expr vararg-expr)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%apply rator-expr rand-expr ... (#%adjust-va vararg-expr))))]
 
   [((Call loc rator-expr rand-exprs))
    (with-syntax ([rator-expr (compile-expr* rator-expr)]
                  [(rand-expr ...) (map compile-expr* rand-exprs)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (rator-expr rand-expr ...)))])
 
 (define/match (compile-field _e)
   [((Field loc expr))
    (with-syntax ([expr (compile-expr* expr)])
-     (syntax/loc loc
+     (syntax/loc* loc
        expr))]
 
   [((FieldExpr loc field-expr value-expr))
    (with-syntax ([field-expr (compile-expr* field-expr)]
                  [value-expr (compile-expr* value-expr)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%cons field-expr value-expr)))]
 
   [((FieldLit loc name expr))
    (with-syntax ([name (symbol->bytes name)]
                  [expr (compile-expr* expr)])
-     (syntax/loc loc
+     (syntax/loc* loc
        (#%cons name expr)))])
 
 
@@ -501,6 +499,7 @@
 (define (maybe-void stmts)
   (if (null? stmts) '((#%void)) stmts))
 
+
 ;; procedure names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define current-procedure-name
@@ -511,3 +510,23 @@
 
 (define (names->method-name names attr)
   (string->symbol (~a (string-join (map symbol->string names) ".") ":" attr)))
+
+
+;; stxlocs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-syntax (syntax/loc* stx)
+  (syntax-parse stx
+    [(_ loc:expr form)
+     #'(replace-srcloc #'here loc #'form)]))
+
+(define (replace-srcloc where-stx with-loc stx)
+  (cond
+    [(list? stx)
+     (for/list ([child-stx (in-list stx)])
+       (replace-srcloc where-stx with-loc child-stx))]
+    [(and (syntax? stx)
+          (equal? (syntax-source where-stx)
+                  (syntax-source stx)))
+     (datum->syntax #f (replace-srcloc where-stx with-loc (syntax-e stx)) with-loc)]
+    [else
+     stx]))
