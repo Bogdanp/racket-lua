@@ -17,4 +17,5 @@
   (if (falsy? a) nil b))
 
 (define-syntax-rule (lua:or a b)
-  (if (falsy? a) b a))
+  (let ([t a])
+    (if (falsy? t) b t)))
