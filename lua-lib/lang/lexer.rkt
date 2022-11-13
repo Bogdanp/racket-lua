@@ -165,7 +165,9 @@
 (define-syntax (λcase stx)
   (syntax-parse stx
     #:literals (else)
-    [(_ {~optional {~seq #:char-id char-id}} [(lit ...) e ...] ... {~optional [else else-e ...]})
+    [(_ {~optional {~seq #:char-id char-id}}
+        [(lit ...) e ...] ...
+        {~optional [else else-e ...]})
      #:with c #'{~? char-id next-c}
      #'(λ (c)
          (case c
@@ -222,7 +224,8 @@
   [else (error "expected [ or =")])
 
 (define-λcase long-brackets-start?
-  [(#\[) long-brackets-more?])
+  [(#\[) long-brackets-more?]
+  [else (error "expected [")])
 
 (define-λcase long-brackets-comment-next?
   [(#\-) (λ (next-c)
