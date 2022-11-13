@@ -54,6 +54,10 @@ function io.output(name)
     return io.open(name, "w")
 end
 
+function io.tmpfile()
+    return io.output(os.tmpname())
+end
+
 function io.type(f)
     if getmetatable(f) == file then
         if f.isclosed() then

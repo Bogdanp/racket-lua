@@ -11,6 +11,14 @@ local read_bytes = racket["read-bytes"]
 local read_bytes_line = racket["read-bytes-line"]
 local write_bytes = racket["write-bytes"]
 local file_position = racket["file-position"]
+local file_stream_buffer_mode = racket["file-stream-buffer-mode"]
+local bytes_to_symbol = racket.compose1(racket["string->symbol"], racket["bytes->string/utf-8"])
+
+local buf_syms = {
+    no   = bytes_to_symbol("none"),
+    line = bytes_to_symbol("line"),
+    full = bytes_to_symbol("block")
+}
 
 local file = {}
 file.__name = "file"
@@ -113,6 +121,18 @@ function file:lines(...)
     return function()
         return self:read(table.unpack(fmt))
     end
+end
+
+function file:setvbuf(mode, size)
+    if size ~= nil then
+        error("file:setvbuf: size argument not supported")
+    end
+    local port = self._inp or self._out
+    local modeval = buf_syms[mode]
+    if modeval == nil then
+        error("file:setvbuf: invalid mode", mode)
+    end
+    file_stream_buffer_mode(port, modeval)
 end
 
 return file
