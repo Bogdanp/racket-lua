@@ -81,7 +81,7 @@ end
 function coroutine.wrap(proc)
     local coro = coroutine.create(proc)
     local wrapped = function(...)
-        return table.select(2, coroutine.resume(coro, ...))
+        return select(2, coroutine.resume(coro, ...))
     end
     return wrapped
 end

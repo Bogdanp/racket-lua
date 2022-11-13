@@ -6,6 +6,7 @@
          "iter.rkt"
          "json.rkt"
          "length.rkt"
+         "nil.rkt"
          "number.rkt"
          "relation.rkt"
          "string.rkt"
@@ -13,7 +14,7 @@
          "type.rkt")
 
 
-;; "foreign" access ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; foreign access ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
  current-racket-imports-enabled?)
@@ -96,6 +97,11 @@
 (define-runtime-module-path-index string.lua "../stdlib/string.lua")
 (define-runtime-module-path-index table.lua "../stdlib/table.lua")
 
+(define (load-table.lua! env name)
+  (define mod (dynamic-require table.lua '#%chunk))
+  (table-set! env name mod)
+  (table-set! env #"select" (table-ref mod #"select")))
+
 (define current-standard-library-modules
   (make-parameter
    (list
@@ -103,7 +109,7 @@
 
     `(#"file"      . ,file.lua)
     `(#"os"        . ,os.lua)
-    `(#"table"     . ,table.lua)
+    `(#"table"     . ,load-table.lua!)
 
     `(#"coroutine" . ,coroutine.lua) ;; depends on table.lua
     `(#"io"        . ,io.lua)        ;; depends on file.lua and os.lua
@@ -113,8 +119,13 @@
 (define (load-standard-library! env)
   (for ([p (in-list (current-standard-library-modules))])
     (define name (car p))
-    (define path (cdr p))
+    (define path-or-proc (cdr p))
     (parameterize ([current-racket-imports-enabled? #t]
                    [current-standard-library-modules null]
                    [current-global-environment env])
-      (table-set! env name (dynamic-require path '#%chunk)))))
+      (cond
+        [(procedure? path-or-proc)
+         (path-or-proc env name)]
+        [else
+         (define mod (dynamic-require path-or-proc '#%chunk))
+         (table-set! env name mod)]))))
