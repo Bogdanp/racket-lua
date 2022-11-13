@@ -252,35 +252,40 @@
 
 (define (lua:read-string in)
   (define quote-char (read-char in))
-  (define str
-    (with-output-to-string
-      (lambda ()
-        (write-char quote-char)
-        (let loop ([escaped? #f])
-          (define char
-            (read-char in))
-          (cond
-            [escaped?
-             (write-char (lua:string-escape char))
-             (loop #f)]
-            [(eqv? char #\\)
-             (loop #t)]
-            [else
-             (write-char char)
-             (unless (eqv? char quote-char)
-               (loop #f))])))))
+  (define lit-str (open-output-string))
+  (define actual-bs (open-output-bytes))
+  (write-char quote-char lit-str)
+  (write-char quote-char actual-bs)
+  (let loop ([escaped? #f])
+    (define char
+      (read-char in))
+    (cond
+      [escaped?
+       (define-values (escape-seq escape-char)
+         (lua:string-escape char))
+       (write-string escape-seq lit-str)
+       (write-char escape-char actual-bs)
+       (loop #f)]
+      [(eqv? char #\\)
+       (loop #t)]
+      [else
+       (write-char char lit-str)
+       (write-char char actual-bs)
+       (unless (eqv? char quote-char)
+         (loop #f))]))
   (define bs
-    (string->bytes/utf-8
-     (substring str 1 (sub1 (string-length str)))))
-  (values str bs))
+    (let ([bs (get-output-bytes actual-bs)])
+      (subbytes bs 1 (sub1 (bytes-length bs)))))
+  (values (get-output-string lit-str) bs))
 
 (define (lua:string-escape chr)
   (case chr
-    [(#\\) #\\]
-    [(#\r) #\return]
-    [(#\n) #\newline]
-    [(#\t) #\tab]
-    [else chr]))
+    [(#\\) (values "\\\\" #\\)]
+    [(#\r) (values "\\r"  #\return)]
+    [(#\n) (values "\\n"  #\newline)]
+    [(#\t) (values "\\t"  #\tab)]
+    [else
+     (values (string chr) chr)]))
 
 (define (lua:read-long-brackets in [comment? #f])
   (define open-brackets (take-while in (if comment? long-brackets-comment-start? long-brackets-start?)))
