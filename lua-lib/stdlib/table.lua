@@ -34,4 +34,39 @@ function table.unpack(t, i, j)
     return go(i or 1, j or #t)
 end
 
+function table.insert(t, pos, value)
+    local len = #t
+    if value == nil then
+        value = pos
+        pos = len + 1
+    end
+    if pos == len + 1 then
+        t[pos] = value
+        return nil
+    end
+    if pos < 1 or pos > len + 1 then
+        error("table.insert: position out of bounds", pos)
+    end
+    for i = len + 1, pos + 1, -1 do
+        t[i] = t[i-1]
+    end
+    t[pos] = value
+end
+
+function table.remove(t, pos)
+    local len = #t
+    pos = pos or len
+    if pos == 0 and len == 0 then
+        return nil
+    end
+    if pos < 1 or pos > len then
+        error("table.remove: position out of bounds", pos)
+    end
+    local value = t[pos]
+    for i = pos, len do
+        t[i] = t[i+1]
+    end
+    return value
+end
+
 return table

@@ -38,3 +38,32 @@ for i = -1, -9, -1 do
         print(v)
     end
 end
+
+local t = {}
+table.insert(t, 'a')
+table.insert(t, 'b')
+table.insert(t, 'c')
+for k, v in pairs(t) do
+    print(k, v)
+end
+
+table.insert(t, 2, 'd')
+for k, v in pairs(t) do
+    print(k, v)
+end
+
+print(pcall(function() table.insert(t, 0, 'e') end))
+print(pcall(function() table.insert(t, 6, 'e') end))
+
+table.remove(t)
+for k, v in pairs(t) do
+    print(k, v)
+end
+
+table.remove(t, 2)
+for k, v in pairs(t) do
+    print(k, v)
+end
+
+print(pcall(function() table.remove(t, 0) end))
+print(pcall(function() table.remove(t, 3) end))
