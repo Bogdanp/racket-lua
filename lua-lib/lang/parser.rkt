@@ -69,8 +69,7 @@
     [(#%negate)        9] ; unary
     [(#%bnegate)       9] ; unary
     [(^)               10]
-    [else
-     (raise-argument-error 'precedence "an operator" id)]))
+    [else              #f]))
 
 (define (parse-chunk l)
   (begin0 (parse-block l)
@@ -307,15 +306,16 @@
              [depth depth])
     (match (lexer-peek l)
       [(binop current-prec)
-       #:when (>= current-prec depth)
+       #:when (and current-prec (>= current-prec depth))
        (define tok (lexer-take l))
        (let loop ([rhs-e (parse-term l)])
          (define next-tok (lexer-peek l))
          (match next-tok
            [(binop next-prec)
-            #:when (or (> next-prec current-prec)
-                       (and (= next-prec current-prec)
-                            (right-associative? (token-val next-tok))))
+            #:when (and next-prec
+                        (or (> next-prec current-prec)
+                            (and (= next-prec current-prec)
+                                 (right-associative? (token-val next-tok)))))
             (loop (step rhs-e next-prec))]
 
            [_
@@ -353,8 +353,10 @@
      (parse-function l)]
     [(lparen)
      (skip l 'lparen)
-     (begin0 (parse-expr l)
-       (skip l 'rparen))]
+     (define expr
+       (begin0 (parse-expr l)
+         (skip l 'rparen)))
+     (parse-primaryexpr l expr)]
     [(lcubrace)
      (parse-table l)]
     [tok
