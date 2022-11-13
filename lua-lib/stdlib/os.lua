@@ -1,6 +1,7 @@
 #lang lua
 
 local exit = racket.exit
+local getenv = racket.getenv
 local delete_file = racket["delete-file"]
 local make_tmpfile = racket.lib("racket/file", "make-temporary-file")
 local bytes_to_path = racket["bytes->path"]
@@ -15,8 +16,28 @@ function os.clock()
     return current_process_millis()
 end
 
+function os.date()
+    error("os.date: not implemented")
+end
+
+function os.difftime(t2, t1)
+    return t2 - t1
+end
+
+function os.execute()
+    error("os.execute: not supported")
+end
+
 function os.exit(code)
     exit(code)
+end
+
+function os.getenv(varname)
+    return getenv(bytes_to_string(varname))
+end
+
+function os.remove(path)
+    return pcall(function() delete_file(bytes_to_path(path)) end)
 end
 
 function os.rename(oldname, newname)
@@ -25,8 +46,8 @@ function os.rename(oldname, newname)
     return pcall(function() rename_file_or_directory(oldpath, newpath) end)
 end
 
-function os.remove(path)
-    return pcall(function() delete_file(bytes_to_path(path)) end)
+function os.setlocale()
+    error("os.setlocale: not supported")
 end
 
 function os.time(t)
