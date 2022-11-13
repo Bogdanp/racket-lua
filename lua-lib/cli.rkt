@@ -4,7 +4,7 @@
 
 (define (make-#lang-lua-port src-in)
   (define-values (in out)
-    (make-pipe))
+    (make-pipe #f (object-name src-in)))
   (begin0 in
     (thread
      (lambda ()
