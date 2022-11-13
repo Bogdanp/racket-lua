@@ -1,7 +1,10 @@
 #lang racket/base
 
-(require racket/match
-         racket/port)
+(require (for-syntax racket/base
+                     syntax/parse)
+         racket/match
+         racket/port
+         racket/string)
 
 (provide
  (struct-out exn:fail:lexer)
@@ -67,9 +70,19 @@
     [(? eof-object?) (make-token 'eof        (read-string 1 in))]
     [(? whitespace?) (make-token 'whitespace (read-whitespace in))]
 
-    ;; TODO: Long brackets.
-    [#\- #:when (eqv? #\- (peek-char in 1))
-     (make-token 'comment (read-line in))]
+    [#\- #:when (equal? "--" (peek-string 2 0 in))
+     (case (peek-string 4 0 in)
+       [("--[[" "--[=")
+        (define-values (str _)
+          (lua:read-long-brackets in #t))
+        (make-token 'comment str)]
+       [else
+        (make-token 'comment (read-line in))])]
+
+    [#\[ #:when (member (peek-string 2 0 in) '("[[" "[="))
+     (define-values (s v)
+       (lua:read-long-brackets in))
+     (make-token 'string s v)]
 
     [#\: #:when (equal? "::" (peek-string 2 0 in))
      (make-token 'coloncolon (read-string 2 in))]
@@ -149,17 +162,21 @@
 
 ;; matchers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-syntax-rule (λcase [(lit ...) e ...] ...)
-  (λ (next-c)
-    (case next-c
-      [(lit ...) e ...] ...
-      [else #f])))
+(define-syntax (λcase stx)
+  (syntax-parse stx
+    #:literals (else)
+    [(_ {~optional {~seq #:char-id char-id}} [(lit ...) e ...] ... {~optional [else else-e ...]})
+     #:with c #'{~? char-id next-c}
+     #'(λ (c)
+         (case c
+           [(lit ...) e ...] ...
+           {~? [else else-e ...]
+               [else #f]}))]))
 
-(define-syntax-rule (define-λcase name [(lit ...) e ...] ...)
-  (define (name c)
-    (case c
-      [(lit ...) e ...] ...
-      [else #f])))
+(define-syntax (define-λcase stx)
+  (syntax-parse stx
+    [(_ name:id . rest)
+     #'(define name (λcase . rest))]))
 
 (define (stop _) #f)
 
@@ -184,28 +201,38 @@
 (define name-start? (make-name-predicate '(ll lu)))
 (define name-more?  (make-name-predicate '(ll lu nd)))
 
-(define (signed-number-start? c)
-  (case c
-    [(#\- #\+) number-start?]
-    [else (number-start? c)]))
+(define-λcase number-digit-or-period?
+  #:char-id c
+  [(#\.) (λ (next-c)
+           (or (number-digit? next-c)
+               (error "expected a digit")))]
+  [else (number-digit? c)])
 
 (define-λcase number-start?
   [(#\.) (number-digit-or-period? #\.)]
   [(#\0) (λcase [(#\.) number-digit?]) ]
   [(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-digit-or-period?])
 
-(define (number-digit-or-period? c)
-  (case c
-    [(#\.)
-     (lambda (next-c)
-       (or (number-digit? next-c)
-           (error "expected a digit")))]
-
-    [else
-     (number-digit? c)]))
-
 (define-λcase number-digit?
   [(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-digit?])
+
+(define-λcase long-brackets-more?
+  [(#\[) stop]
+  [(#\=) long-brackets-more?]
+  [else (error "expected [ or =")])
+
+(define-λcase long-brackets-start?
+  [(#\[) long-brackets-more?])
+
+(define-λcase long-brackets-comment-next?
+  [(#\-) (λ (next-c)
+           (or (long-brackets-start? next-c)
+               (error "expected [")))]
+  [else (error "expected -")])
+
+(define-λcase long-brackets-comment-start?
+  [(#\-) long-brackets-comment-next?]
+  [else (error "expected -")])
 
 
 ;; readers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -221,7 +248,7 @@
   (make-reader op-start? string->symbol))
 
 (define lua:read-number
-  (make-reader signed-number-start? string->number))
+  (make-reader number-start? string->number))
 
 (define (lua:read-string in)
   (define quote-char (read-char in))
@@ -254,3 +281,22 @@
     [(#\n) #\newline]
     [(#\t) #\tab]
     [else chr]))
+
+(define (lua:read-long-brackets in [comment? #f])
+  (define open-brackets (take-while in (if comment? long-brackets-comment-start? long-brackets-start?)))
+  (define close-brackets (string-replace open-brackets "[" "]"))
+  (define close-brackets-re (regexp (regexp-quote close-brackets)))
+  (define str-no-open
+    (match (regexp-match-peek-positions close-brackets-re in)
+      [#f (error (format "no matching '~a' for '~a'" close-brackets open-brackets))]
+      [`((,_ . ,end-pos)) (read-string end-pos in)]))
+  (define brackets-len
+    (string-length open-brackets))
+  (define content-bs
+    (let ([trimmed-str (cond
+                         [(regexp-match? #rx"^\r\n" str-no-open) (substring str-no-open 2)]
+                         [(regexp-match? #rx"^\n"   str-no-open) (substring str-no-open 1)]
+                         [else str-no-open])])
+      (string->bytes/utf-8
+       (substring trimmed-str 0 (- (string-length trimmed-str) brackets-len)))))
+  (values (string-append open-brackets str-no-open) content-bs))

@@ -20,8 +20,4 @@ function o:id(v, ...)
     end
 end
 print(o:id(1, ((o.id)(o) or true)))
-
-print(
-    (function() return false end)(1) or
-    (function(x) return x == 2 end)(2)
-)
+print((function() return false end)(1) or (function(x) return x == 2 end)(2))
