@@ -30,9 +30,13 @@
 
 (define/match (compile-block _)
   [((Block loc stmts))
-   (with-syntax ([(statement ...) (map compile-statement (Lua->L1 stmts))])
-     (syntax/loc* loc
-       (#%begin statement ...)))])
+   (match (Lua->L1 stmts)
+     [(list)
+      (syntax/loc* loc (#%values))]
+     [stmts
+      (with-syntax ([(statement ...) (map compile-statement stmts)])
+        (syntax/loc* loc
+          (#%begin statement ...)))])])
 
 (define/match (compile-statement e)
   [((Assignment loc vars (list exprs ... (vararg vararg-expr))))
