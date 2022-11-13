@@ -67,3 +67,9 @@ end
 
 print(pcall(function() table.remove(t, 0) end))
 print(pcall(function() table.remove(t, 3) end))
+
+table.insert(t, 'c')
+print(table.concat(t))
+print(table.concat(t, ' '))
+print(table.concat(t, ' ', 2))
+print(table.concat(t, ' ', 5))

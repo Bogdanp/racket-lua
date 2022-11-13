@@ -1,5 +1,8 @@
 #lang lua
 
+local call_bytes = racket.lib("racket/port", "call-with-output-bytes")
+local write_bytes = racket["write-bytes"]
+
 local table = {}
 
 function table.select(index, ...)
@@ -67,6 +70,31 @@ function table.remove(t, pos)
         t[i] = t[i+1]
     end
     return value
+end
+
+function table.concat(t, sep, i, j)
+    sep = sep or ""
+    if type(sep) ~= "string" then
+        error("table.concat: invalid separator value")
+    end
+    i = i or 1
+    j = j or #t
+    local function impl(out)
+        for k = i, j do
+            local v = t[k]
+            if k > i then
+                write_bytes(sep, out)
+            end
+            if type(v) == "string" then
+                write_bytes(v, out)
+            elseif type(v) == "number" then
+                write_bytes(tostring(v), out)
+            else
+                error("table.concat: invalid table value", v)
+            end
+        end
+    end
+    return call_bytes(impl)
 end
 
 return table
