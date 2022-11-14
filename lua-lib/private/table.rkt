@@ -115,7 +115,7 @@
   (hash-keys (table-ht t)))
 
 (define (table-values t)
-  (hash-keys (table-ht t)))
+  (hash-values (table-ht t)))
 
 (define (lua:getmetatable t . _)
   (define meta
