@@ -28,25 +28,29 @@
   #:transparent
   #:property prop:procedure
   (lambda (self . args)
-    (define __call
+    (define dunder-call
       (table-meta-ref self #"__call"))
     (cond
-      [(procedure? __call)
-       (apply __call self args)]
+      [(procedure? dunder-call)
+       (apply dunder-call self args)]
       [else
-       (error 'application "table ~a is not callable" (lua:tostring self))])))
+       (raise-lua-error #f (format "table ~a is not callable" (lua:tostring self)))])))
 
 (define (make-table . args)
-  (define ht (make-hash))
-  (define index 1)
-  (for ([arg (in-list args)])
-    (match arg
-      [(and `(,k . ,(and (not (? list?)) v)))
-       (hash-set! ht k v)]
-      [_
-       (unless (nil? arg)
-         (hash-set! ht index arg))
-       (set! index (add1 index))]))
+  (define ht
+    (make-hash
+     (for/fold ([kvs null]
+                [index 1]
+                #:result kvs)
+               ([arg (in-list args)])
+       (cond
+         [(nil? arg)
+          (values kvs (add1 index))]
+         [(and (pair? arg)
+               (not (list? arg)))
+          (values (cons arg kvs) index)]
+         [else
+          (values (cons (cons index arg) kvs) (add1 index))]))))
   (table nil ht))
 
 (define (table-length t)
