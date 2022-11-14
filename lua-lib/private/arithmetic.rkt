@@ -15,7 +15,8 @@
 
 (define (lua:negate v)
   (cond
-    [(number? v) (- v)]
+    [(number? v)
+     (- v)]
     [else
      (define dunder-proc
        (and (table? v)
@@ -24,36 +25,42 @@
          (lua:adjust* (λ () (dunder-proc v)))
          (lua:error (format "-: expected a number, received ~a" (lua:tostring v))))]))
 
-(define ((make-binop who dunder-name integer-proc real-proc [coerce-ints? #f]) a b)
+(define ((make-binop-dunder-proc who dunder-name) a b)
+  (define lhs-dunder-proc (and (table? a) (table-meta-ref a dunder-name)))
+  (define rhs-dunder-proc (and (table? b) (table-meta-ref b dunder-name)))
   (cond
-    [(and (not coerce-ints?)
-          (exact-integer? a)
-          (exact-integer? b))
-     (integer-proc a b)]
-    [(and (number? a)
-          (number? b))
-     (real-proc (exact->inexact a)
-                (exact->inexact b))]
+    [(procedure? lhs-dunder-proc)
+     (lua:adjust* (λ () (lhs-dunder-proc a b)))]
+    [(procedure? rhs-dunder-proc)
+     (lua:adjust* (λ () (rhs-dunder-proc b a)))]
     [else
-     (define lhs-dunder-proc (and (table? a) (table-meta-ref a dunder-name)))
-     (define rhs-dunder-proc (and (table? b) (table-meta-ref b dunder-name)))
-     (cond
-       [(procedure? lhs-dunder-proc)
-        (lua:adjust* (λ () (lhs-dunder-proc a b)))]
-       [(procedure? rhs-dunder-proc)
-        (lua:adjust* (λ () (rhs-dunder-proc b a)))]
-       [else
-        (lua:error (format "~a: expected two numbers, received ~a and ~a"
-                           who
-                           (lua:tostring a)
-                           (lua:tostring b)))])]))
+     (lua:error (format "~a: expected two numbers, received ~a and ~a"
+                        who
+                        (lua:tostring a)
+                        (lua:tostring b)))]))
 
 (define-syntax (define-binop stx)
   (syntax-parse stx
     [(_ id:id who:string dunder-name:bytes integer-proc:expr {~optional real-proc:expr})
      #'(begin
          (provide id)
-         (define id (make-binop 'who dunder-name integer-proc {~? real-proc integer-proc})))]))
+         (define dunder-proc
+           (make-binop-dunder-proc 'who dunder-name))
+         (define (id a b)
+           (cond
+             [(and (exact-integer? a)
+                   (exact-integer? b))
+              (integer-proc a b)]
+             [(and (real? a)
+                   (real? b))
+              ({~? real-proc integer-proc} a b)]
+             [(and (number? a)
+                   (number? b))
+              ({~? real-proc integer-proc}
+               (exact->inexact a)
+               (exact->inexact b))]
+             [else
+              (dunder-proc a b)])))]))
 
 (define-syntax-rule (define-binops [def ...] ...)
   (begin (define-binop def ...) ...))
@@ -100,34 +107,38 @@
          (lua:adjust* (λ () (dunder-proc v)))
          (lua:error (format "~~: expected an integer, received ~a" (lua:tostring v))))]))
 
-(define ((make-bit-binop who dunder-name proc) a b)
+(define ((make-bit-binop-dunder-proc who dunder-name) a b)
+  (define lhs-dunder-proc (and (table? a) (table-meta-ref a dunder-name)))
+  (define rhs-dunder-proc (and (table? b) (table-meta-ref b dunder-name)))
   (cond
-    [(and (exact-integer? a) (exact-integer? b))
-     (proc a b)]
-    [(and (exact-integer? a) (integer? b))
-     (proc a (inexact->exact b))]
-    [(and (integer? a) (exact-integer? b))
-     (proc (inexact->exact a) b)]
+    [(procedure? lhs-dunder-proc)
+     (lua:adjust* (λ () (lhs-dunder-proc a b)))]
+    [(procedure? rhs-dunder-proc)
+     (lua:adjust* (λ () (rhs-dunder-proc b a)))]
     [else
-     (define lhs-dunder-proc (and (table? a) (table-meta-ref a dunder-name)))
-     (define rhs-dunder-proc (and (table? b) (table-meta-ref b dunder-name)))
-     (cond
-       [(procedure? lhs-dunder-proc)
-        (lua:adjust* (λ () (lhs-dunder-proc a b)))]
-       [(procedure? rhs-dunder-proc)
-        (lua:adjust* (λ () (rhs-dunder-proc b a)))]
-       [else
-        (lua:error (format "~a: expected two integers, received ~a and ~a"
-                           who
-                           (lua:tostring a)
-                           (lua:tostring b)))])]))
+     (lua:error (format "~a: expected two integers, received ~a and ~a"
+                        who
+                        (lua:tostring a)
+                        (lua:tostring b)))]))
 
 (define-syntax (define-bit-binop stx)
   (syntax-parse stx
     [(_ id:id who:string dunder-name:bytes proc:expr)
      #'(begin
          (provide id)
-         (define id (make-bit-binop 'who dunder-name proc)))]))
+         (define dunder-proc
+           (make-bit-binop-dunder-proc 'who dunder-name))
+         (define (id a b)
+           (cond
+             [(and (exact-integer? a)
+                   (exact-integer? b))
+              (proc a b)]
+             [(and (exact-integer? a) (integer? b))
+              (proc a (inexact->exact b))]
+             [(and (integer? a) (exact-integer? b))
+              (proc (inexact->exact a) b)]
+             [else
+              (dunder-proc a b)])))]))
 
 (define-syntax-rule (define-bit-binops [def ...] ...)
   (begin (define-bit-binop def ...) ...))

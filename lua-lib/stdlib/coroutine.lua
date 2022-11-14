@@ -32,8 +32,7 @@ function coroutine.create(proc)
 end
 
 function coroutine.isyieldable(coro)
-    coro = coro or current
-    return coro.yield ~= nil
+    return (coro or current).yield ~= nil
 end
 
 function coroutine.resume(coro, ...)

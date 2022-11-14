@@ -15,7 +15,7 @@
  lua:~=)
 
 (define (lua:== a b)
-  (or (lua:rawequal a b)
+  (or (equal? a b)
       (and (table? a)
            (table? b)
            (let ([lhs-eq (table-meta-ref a #"__eq")]
@@ -28,16 +28,8 @@
 (define (lua:~= a b)
   (not (lua:== a b)))
 
-(define ((make-binop who dunder-name number-proc string-proc) a b)
+(define ((make-binop-dunder-proc who dunder-name) a b)
   (cond
-    [(and
-      (number? a)
-      (number? b))
-     (number-proc a b)]
-    [(and
-      (bytes? a)
-      (bytes? b))
-     (string-proc a b)]
     [(and dunder-name
           (or (table? a)
               (table? b)))
@@ -61,10 +53,21 @@
 
 (define-syntax (define-binop stx)
   (syntax-parse stx
-    [(_ id:id who:string dunder-name:expr integer-proc:expr string-proc:expr)
+    [(_ id:id who:string dunder-name:expr number-proc:expr string-proc:expr)
      #'(begin
          (provide id)
-         (define id (make-binop 'who dunder-name integer-proc string-proc)))]))
+         (define dunder-proc
+           (make-binop-dunder-proc 'who dunder-name))
+         (define (id a b)
+           (cond
+             [(and (number? a)
+                   (number? b))
+              (number-proc a b)]
+             [(and (bytes? a)
+                   (bytes? b))
+              (string-proc a b)]
+             [else
+              (dunder-proc a b)])))]))
 
 (define-syntax-rule (define-binops [def ...] ...)
   (begin (define-binop def ...) ...))
