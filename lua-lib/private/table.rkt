@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require racket/lazy-require
-         racket/match
          "exn.rkt"
          "nil.rkt")
 
@@ -96,6 +95,8 @@
   (define dunder-value
     (table-meta-ref t #"__newindex"))
   (cond
+    [(nil? k)
+     (raise-lua-error #f "table index is nil")]
     [(table? dunder-value)
      (table-set! dunder-value k v)]
     [(procedure? dunder-value)
@@ -107,9 +108,13 @@
 
 (define (lua:rawset t k v)
   (begin0 t
-    (if (nil? v)
-        (hash-remove! (table-ht t) k)
-        (hash-set! (table-ht t) k v))))
+    (cond
+      [(nil? k)
+       (raise-lua-error #f "table index is nil")]
+      [(nil? v)
+       (hash-remove! (table-ht t) k)]
+      [else
+       (hash-set! (table-ht t) k v)])))
 
 (define (table-keys t)
   (hash-keys (table-ht t)))

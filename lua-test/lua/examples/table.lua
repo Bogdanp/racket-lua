@@ -73,3 +73,5 @@ print(table.concat(t))
 print(table.concat(t, ' '))
 print(table.concat(t, ' ', 2))
 print(table.concat(t, ' ', 5))
+
+print(pcall(function() t[nil] = 5 end))
