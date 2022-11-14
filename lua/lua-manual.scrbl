@@ -23,8 +23,8 @@ progress, but much of the core language is supported already.
 @subsection{Requiring Modules}
 
 Lua modules can be imported directly from Racket.  Every Lua module
-provides a single value called @racket[#%chunk] which represents the
-return value of that module.  For example, if you save the following
+provides a list called @racket[#%chunk] which represents the set of
+return values of that module.  For example, if you save the following
 program to a file named "add1.lua":
 
 @codeblock|{
@@ -41,7 +41,7 @@ You can use it from Racket like so:
 
 @racketblock[
 (require lua/value "add1.lua")
-(define add1 (table-ref #%chunk #"add1"))
+(define add1 (table-ref (car #%chunk) #"add1"))
 (add1 5)
 ]
 
@@ -50,28 +50,29 @@ You can use it from Racket like so:
 You can run Lua code at runtime using @racketmodname[racket/sandbox].
 For example:
 
+@(define ev (make-base-eval '(require racket/string)))
+
 @examples[
 #:label #f
-  (require racket/sandbox
-           racket/string)
+#:eval ev
+  (require racket/sandbox)
+  ((make-module-evaluator "#lang lua\nreturn 42") '#%chunk)
+  ((make-module-evaluator "#lang lua\nreturn 42, 43") '#%chunk)
 
-  (let ([lua-eval (make-module-evaluator "#lang lua\nreturn 42")])
-    (lua-eval '#%chunk))
-
+  (code:line)
   (define dangerous-prog
-    (string-join
-     '("#lang lua"
-       ""
-       "return io.input('/etc/passwd'):read('a')")
-     "\n"))
+    (string-append
+     "#lang lua\n"
+     "\n"
+     "return io.input('/etc/passwd'):read('a')"))
 
   (eval:error
-   (let ([lua-eval (make-module-evaluator dangerous-prog)])
-     (lua-eval '#%chunk)))
+   ((make-module-evaluator dangerous-prog) '#%chunk))
 
-  (let ([lua-eval (parameterize ([sandbox-path-permissions '((read #rx#".*"))])
-                    (make-module-evaluator dangerous-prog))])
-    (subbytes (lua-eval '#%chunk) 0 5))
+  (define chunk
+    (parameterize ([sandbox-path-permissions '((read #rx#".*"))])
+      ((make-module-evaluator dangerous-prog) '#%chunk)))
+  (subbytes (car chunk) 0 5)
 ]
 
 @section{Calling Racket from Lua}

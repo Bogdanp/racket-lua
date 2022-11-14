@@ -26,7 +26,7 @@
          (#%define (#%lua-module . #%rest)
            body)
          (#%define #%chunk
-           (#%adjust (#%lua-module))))))))
+           (#%adjust-va (#%lua-module))))))))
 
 (define/match (compile-block _)
   [((Block loc stmts))

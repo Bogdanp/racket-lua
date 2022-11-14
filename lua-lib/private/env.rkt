@@ -98,7 +98,7 @@
 (define-runtime-module-path-index table.lua "../stdlib/table.lua")
 
 (define (load-table.lua! env name)
-  (define mod (dynamic-require table.lua '#%chunk))
+  (define mod (car (dynamic-require table.lua '#%chunk)))
   (table-set! env name mod)
   (table-set! env #"select" (table-ref mod #"select")))
 
@@ -127,5 +127,5 @@
         [(procedure? path-or-proc)
          (path-or-proc env name)]
         [else
-         (define mod (dynamic-require path-or-proc '#%chunk))
-         (table-set! env name mod)]))))
+         (define chunk (dynamic-require path-or-proc '#%chunk))
+         (table-set! env name (car chunk))]))))
