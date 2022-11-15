@@ -10,10 +10,8 @@
  falsy?
  truthy?)
 
-(define nil null)
-
-(define (nil? v)
-  (eq? nil v))
+(define nil  null)
+(define nil? null?)
 
 (define-syntax (nil~> stx)
   (syntax-parse stx
