@@ -9,20 +9,20 @@
 
 (define-runtime-path programs-dir "programs")
 
-(struct config (name path args)
+(struct config (name path args hide-stdout?)
   #:transparent)
+
+(define (make-config name args
+                     #:path [path (build-path programs-dir (format "~a.lua" name))]
+                     #:hide-stdout? [hide-stdout? #f])
+  (config name path args hide-stdout?))
 
 (define programs
   (list
-   (config "fannkuch"
-           (build-path programs-dir "fannkuch.lua")
-           '("10"))
-   (config "spectral-norm"
-           (build-path programs-dir "spectral-norm.lua")
-           '("1000"))
-   (config "binary-trees"
-           (build-path programs-dir "binary-trees.lua")
-           '("15"))))
+   (make-config "binary-trees" '("15"))
+   (make-config "fannkuch" '("10"))
+   (make-config "spectral-norm" '("1000"))
+   (make-config "mandelbrot" '("400") #:hide-stdout? #t)))
 
 (define-runtime-path results.json
   "results.json")
@@ -89,13 +89,16 @@
 
   (define results
     (for/hash ([conf (in-list programs-to-run)])
-      (match-define (config name path args) conf)
+      (match-define (config name path args hide-stdout?) conf)
       (printf "== Running ~a (lua) ==~n" name)
       (define lua-result
         (hash-set*
          (bench
           (lambda ()
-            (display (apply run-lua (path->string path) args))))
+            (define stdout-data
+              (apply run-lua (path->string path) args))
+            (unless hide-stdout?
+              (display stdout-data))))
          'version lua-version))
       (printf "== Running ~a (racket) ==~n" name)
       (define racket-result
@@ -103,7 +106,10 @@
          (lambda ()
            (call-with-input-file path
              (lambda (in)
-               (eval-lua in args))))))
+               (parameterize ([current-output-port (if hide-stdout?
+                                                       (open-output-nowhere)
+                                                       (current-output-port))])
+                 (eval-lua in args)))))))
       (values
        (string->symbol name)
        (hasheq
