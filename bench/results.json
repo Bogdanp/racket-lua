@@ -1,1 +1,68 @@
-[{"commit":"793db195eea3e6f1c8f9e5504896cb1c6695fe27\n","machine":"Darwin 192-168-0-63.rdsnet.ro 21.6.0 Darwin Kernel Version 21.6.0: Sat Jun 18 17:07:25 PDT 2022; root:xnu-8020.140.41~1/RELEASE_X86_64 x86_64","results":{"fannkuch":{"lua":{"cpu":1,"gc":0,"real":3114,"version":"Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio\n"},"racket":{"cpu":14785,"gc":98,"real":15249}},"spectral-norm":{"lua":{"cpu":1,"gc":0,"real":3185,"version":"Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio\n"},"racket":{"cpu":8012,"gc":104,"real":8209}}},"timestamp":1668496106}]
+[
+  {
+    "commit": "7038dfceefcdf0e3cfa033856679425c9ab92873\n",
+    "machine": "Darwin 192-168-0-63.rdsnet.ro 21.6.0 Darwin Kernel Version 21.6.0: Sat Jun 18 17:07:25 PDT 2022; root:xnu-8020.140.41~1/RELEASE_X86_64 x86_64",
+    "results": {
+      "fannkuch": {
+        "lua": {
+          "cpu": 1,
+          "gc": 0,
+          "real": 3461,
+          "version": "Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio\n"
+        },
+        "racket": {
+          "cpu": 14744,
+          "gc": 91,
+          "real": 15203
+        }
+      },
+      "spectral-norm": {
+        "lua": {
+          "cpu": 1,
+          "gc": 0,
+          "real": 3162,
+          "version": "Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio\n"
+        },
+        "racket": {
+          "cpu": 7556,
+          "gc": 87,
+          "real": 7748
+        }
+      }
+    },
+    "timestamp": 1668536940
+  },
+  {
+    "commit": "793db195eea3e6f1c8f9e5504896cb1c6695fe27\n",
+    "machine": "Darwin 192-168-0-63.rdsnet.ro 21.6.0 Darwin Kernel Version 21.6.0: Sat Jun 18 17:07:25 PDT 2022; root:xnu-8020.140.41~1/RELEASE_X86_64 x86_64",
+    "results": {
+      "fannkuch": {
+        "lua": {
+          "cpu": 1,
+          "gc": 0,
+          "real": 3114,
+          "version": "Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio\n"
+        },
+        "racket": {
+          "cpu": 14785,
+          "gc": 98,
+          "real": 15249
+        }
+      },
+      "spectral-norm": {
+        "lua": {
+          "cpu": 1,
+          "gc": 0,
+          "real": 3185,
+          "version": "Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio\n"
+        },
+        "racket": {
+          "cpu": 8012,
+          "gc": 104,
+          "real": 8209
+        }
+      }
+    },
+    "timestamp": 1668496106
+  }
+]
