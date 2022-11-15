@@ -19,7 +19,10 @@
            '("10"))
    (config "spectral-norm"
            (build-path programs-dir "spectral-norm.lua")
-           '("1000"))))
+           '("1000"))
+   (config "binary-trees"
+           (build-path programs-dir "binary-trees.lua")
+           '("15"))))
 
 (define-runtime-path results.json
   "results.json")

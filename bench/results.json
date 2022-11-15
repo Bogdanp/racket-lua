@@ -1,5 +1,51 @@
 [
   {
+    "commit": "280736f7579f1613fab6a20ea6d390e9286b667d\n",
+    "machine": "Darwin 192-168-0-63.rdsnet.ro 21.6.0 Darwin Kernel Version 21.6.0: Sat Jun 18 17:07:25 PDT 2022; root:xnu-8020.140.41~1/RELEASE_X86_64 x86_64",
+    "results": {
+      "binary-trees": {
+        "lua": {
+          "cpu": 1,
+          "gc": 0,
+          "real": 1621,
+          "version": "Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio\n"
+        },
+        "racket": {
+          "cpu": 3273,
+          "gc": 530,
+          "real": 3353
+        }
+      },
+      "fannkuch": {
+        "lua": {
+          "cpu": 1,
+          "gc": 0,
+          "real": 3236,
+          "version": "Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio\n"
+        },
+        "racket": {
+          "cpu": 14506,
+          "gc": 92,
+          "real": 15000
+        }
+      },
+      "spectral-norm": {
+        "lua": {
+          "cpu": 1,
+          "gc": 0,
+          "real": 3236,
+          "version": "Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio\n"
+        },
+        "racket": {
+          "cpu": 7487,
+          "gc": 87,
+          "real": 7727
+        }
+      }
+    },
+    "timestamp": 1668538532
+  },
+  {
     "commit": "7038dfceefcdf0e3cfa033856679425c9ab92873\n",
     "machine": "Darwin 192-168-0-63.rdsnet.ro 21.6.0 Darwin Kernel Version 21.6.0: Sat Jun 18 17:07:25 PDT 2022; root:xnu-8020.140.41~1/RELEASE_X86_64 x86_64",
     "results": {
