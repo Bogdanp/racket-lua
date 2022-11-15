@@ -10,8 +10,7 @@
  falsy?
  truthy?)
 
-(define nil
-  (string->uninterned-symbol "nil"))
+(define nil null)
 
 (define (nil? v)
   (eq? nil v))
