@@ -6,7 +6,6 @@
          "iter.rkt"
          "json.rkt"
          "length.rkt"
-         "nil.rkt"
          "number.rkt"
          "relation.rkt"
          "string.rkt"

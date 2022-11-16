@@ -9,7 +9,7 @@
   (with-handlers ([exn:fail:lexer?
                    (lambda (e)
                      (values "" 'error #f (exn:fail:lexer-pos e) (add1 (exn:fail:lexer-pos e))))])
-    (define l (make-lexer in #f))
+    (define l (make-lexer in #:skip-comments? #f #:partial-strings? #t))
     (define t (lexer-take l))
     (define s (token-str t))
     (values

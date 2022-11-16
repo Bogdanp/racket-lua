@@ -23,11 +23,17 @@
 (struct token (type str val line col pos)
   #:prefab)
 
-(struct lexer (in skip? [pending #:mutable])
+(struct lexer
+  (in
+   skip-comments?
+   partial-strings?
+   [pending #:mutable])
   #:transparent)
 
-(define (make-lexer in [skip? #t])
-  (lexer in skip? #f))
+(define (make-lexer in
+                    #:skip-comments? [skip-comments? #t]
+                    #:partial-strings? [partial-strings? #f])
+  (lexer in skip-comments? partial-strings? #f))
 
 (define (lexer-peek l)
   (cond
@@ -48,18 +54,23 @@
      (lexer-read-token l)]))
 
 (define (lexer-read-token l)
-  (define skip? (lexer-skip? l))
+  (define skip-comments?
+    (lexer-skip-comments? l))
+  (define partial-strings?
+    (lexer-partial-strings? l))
   (let loop ()
-    (define t (read-token (lexer-in l)))
+    (define t
+      (read-token (lexer-in l) partial-strings?))
     (case (token-type t)
       [(comment whitespace)
-       (if skip? (loop) t)]
-      [else t])))
+       (if skip-comments? (loop) t)]
+      [else
+       t])))
 
 
 ;; readers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (read-token in)
+(define (read-token in [partial-strings? #f])
   (define-values (line col pos)
     (port-next-location in))
 
@@ -74,14 +85,14 @@
      (case (peek-string 4 0 in)
        [("--[[" "--[=")
         (define-values (str _)
-          (lua:read-long-brackets in #t))
+          (lua:read-long-brackets in #t partial-strings?))
         (make-token 'comment str)]
        [else
         (make-token 'comment (read-line in))])]
 
     [#\[ #:when (member (peek-string 2 0 in) '("[[" "[="))
      (define-values (s v)
-       (lua:read-long-brackets in))
+       (lua:read-long-brackets in #f partial-strings?))
      (make-token 'string s v)]
 
     [#\: #:when (equal? "::" (peek-string 2 0 in))
@@ -107,7 +118,7 @@
 
     [(or #\' #\")
      (define-values (s v)
-       (lua:read-string in))
+       (lua:read-string in partial-strings?))
      (make-token 'string s v)]
 
     [(? number-start?)
@@ -253,32 +264,38 @@
 (define lua:read-number
   (make-reader number-start? string->number))
 
-(define (lua:read-string in)
+(define (lua:read-string in [partial? #f])
   (define quote-char (read-char in))
   (define lit-str (open-output-string))
   (define actual-bs (open-output-bytes))
   (write-char quote-char lit-str)
   (write-char quote-char actual-bs)
-  (let loop ([escaped? #f])
-    (define char
-      (read-char in))
-    (cond
-      [escaped?
-       (define-values (escape-seq escape-char)
-         (lua:string-escape char))
-       (write-string escape-seq lit-str)
-       (write-char escape-char actual-bs)
-       (loop #f)]
-      [(eqv? char #\\)
-       (loop #t)]
-      [else
-       (write-char char lit-str)
-       (write-char char actual-bs)
-       (unless (eqv? char quote-char)
-         (loop #f))]))
+  (define has-end-quote?
+    (let loop ([escaped? #f])
+      (define char
+        (read-char in))
+      (cond
+        [(eof-object? char)
+         (cond
+           [partial? #f]
+           [else (error 'lua:read-string "unexpected EOF while reading string")])]
+        [escaped?
+         (define-values (escape-seq escape-char)
+           (lua:string-escape char))
+         (write-string escape-seq lit-str)
+         (write-char escape-char actual-bs)
+         (loop #f)]
+        [(eqv? char #\\)
+         (loop #t)]
+        [else
+         (write-char char lit-str)
+         (write-char char actual-bs)
+         (cond
+           [(eqv? char quote-char) #t]
+           [else  (loop #f)])])))
   (define bs
     (let ([bs (get-output-bytes actual-bs)])
-      (subbytes bs 1 (sub1 (bytes-length bs)))))
+      (subbytes bs 1 ((if has-end-quote? sub1 values) (bytes-length bs)))))
   (values (get-output-string lit-str) bs))
 
 (define (lua:string-escape chr)
@@ -290,21 +307,20 @@
     [else
      (values (string chr) chr)]))
 
-(define (lua:read-long-brackets in [comment? #f])
+(define (lua:read-long-brackets in [comment? #f] [partial? #f])
   (define open-brackets (take-while in (if comment? long-brackets-comment-start? long-brackets-start?)))
   (define close-brackets (string-replace open-brackets "[" "]"))
   (define close-brackets-re (regexp (regexp-quote close-brackets)))
-  (define str-no-open
+  (define-values (str-no-open close-brackets-len)
     (match (regexp-match-peek-positions close-brackets-re in)
+      [#f #:when partial? (values (port->string in) 0)]
       [#f (error (format "no matching '~a' for '~a'" close-brackets open-brackets))]
-      [`((,_ . ,end-pos)) (read-string end-pos in)]))
-  (define brackets-len
-    (string-length open-brackets))
+      [`((,_ . ,end-pos)) (values (read-string end-pos in) (string-length open-brackets))]))
   (define content-bs
     (let ([trimmed-str (cond
                          [(regexp-match? #rx"^\r\n" str-no-open) (substring str-no-open 2)]
                          [(regexp-match? #rx"^\n"   str-no-open) (substring str-no-open 1)]
                          [else str-no-open])])
       (string->bytes/utf-8
-       (substring trimmed-str 0 (- (string-length trimmed-str) brackets-len)))))
+       (substring trimmed-str 0 (- (string-length trimmed-str) close-brackets-len)))))
   (values (string-append open-brackets str-no-open) content-bs))

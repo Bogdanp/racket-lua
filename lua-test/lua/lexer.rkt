@@ -41,7 +41,7 @@
         (call-with-input-file path
           (lambda (in)
             (for/hasheqv ([idx (in-naturals)]
-                          [tok (in-list (lexer->tokens (make-lexer in #f)))])
+                          [tok (in-list (lexer->tokens (make-lexer in #:skip-comments? #f)))])
               (values idx tok)))))
       (with-handlers ([exn:fail:filesystem?
                        (λ (_)
