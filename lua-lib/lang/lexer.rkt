@@ -113,7 +113,7 @@
      (make-token 'dotdotdot (read-string 3 in) '...)]
     [#\. #:when (equal? ".." (peek-string 2 0 in))
      (make-token 'op (read-string 2 in) '..)]
-    [#\. #:when (not (number-digit? (peek-char in 1)))
+    [#\. #:when (not (decimal-digit? (peek-char in 1)))
      (make-token 'dot (read-string 1 in) '\.)]
 
     [(or #\' #\")
@@ -216,29 +216,37 @@
 
 (define-λcase number-start?
   [(#\.) (number-more? #\.)]
-  [(#\0) (λcase [(#\.) number-digit-or-exponent?]) ]
+  [(#\0) (λcase
+          [(#\x #\X) (λ (c) (or (hex-digit? c) (error "expected a hex digit")))]
+          [(#\.) decimal-digit-or-exponent?]) ]
   [(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-more?])
 
 (define-λcase number-more?
   #:char-id c
-  [(#\e #\E) number-digit-or-sign?]
+  [(#\e #\E) decimal-digit-or-sign?]
   [(#\.) (λ (next-c)
-           (or (number-digit-or-exponent? next-c)
+           (or (decimal-digit-or-exponent? next-c)
                (error "expected a digit")))]
-  [else (and (number-digit? c) number-more?)])
+  [else (and (decimal-digit? c) number-more?)])
 
-(define-λcase number-digit-or-sign?
+(define-λcase decimal-digit-or-sign?
   #:char-id c
-  [(#\+ #\-) number-digit?]
-  [else (and (number-digit? c) number-digit?)])
+  [(#\+ #\-) decimal-digit?]
+  [else (and (decimal-digit? c) decimal-digit?)])
 
-(define-λcase number-digit-or-exponent?
+(define-λcase decimal-digit-or-exponent?
   #:char-id c
-  [(#\e #\E) number-digit-or-sign?]
-  [else (and (number-digit? c) number-digit-or-exponent?)])
+  [(#\e #\E) decimal-digit-or-sign?]
+  [else (and (decimal-digit? c) decimal-digit-or-exponent?)])
 
-(define-λcase number-digit?
-  [(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-digit?])
+(define-λcase decimal-digit?
+  [(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) decimal-digit?])
+
+(define-λcase hex-digit?
+  #:char-id c
+  [(#\a #\b #\c #\d #\e #\f) hex-digit?]
+  [(#\A #\B #\C #\D #\E #\F) hex-digit?]
+  [else (and (decimal-digit? c) hex-digit?)])
 
 (define-λcase long-brackets-more?
   [(#\[) stop]
@@ -273,7 +281,10 @@
   (make-reader op-start? string->symbol))
 
 (define lua:read-number
-  (make-reader number-start? string->number))
+  (make-reader number-start? (λ (s)
+                               (if (regexp-match? #rx"^0[xX]" s)
+                                   (string->number (string-append "#x" (substring s 2)) 16)
+                                   (string->number s)))))
 
 (define (lua:read-string in [partial? #f])
   (define quote-char (read-char in))

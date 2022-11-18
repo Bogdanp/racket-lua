@@ -14,3 +14,5 @@ iffy funny forty whiley
 "string with \n escapes \t \r\n"
 
 1024.523 5e10 5e-20 .5e10 .5E-5 0.5e00 0.123E1 12.5e+10
+
+0x0 0x7F 0x123 0Xdeadbeef 0xDeAdBeEF
