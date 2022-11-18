@@ -22,7 +22,8 @@
    (make-config "binary-trees" '("15"))
    (make-config "fannkuch" '("10"))
    (make-config "spectral-norm" '("1000"))
-   (make-config "mandelbrot" '("400") #:hide-stdout? #t)))
+   (make-config "mandelbrot" '("400") #:hide-stdout? #t)
+   (make-config "nbody" '("500000"))))
 
 (define-runtime-path results.json
   "results.json")
