@@ -214,17 +214,28 @@
 (define name-start? (make-name-predicate '(ll lu)))
 (define name-more?  (make-name-predicate '(ll lu nd)))
 
-(define-λcase number-digit-or-period?
-  #:char-id c
-  [(#\.) (λ (next-c)
-           (or (number-digit? next-c)
-               (error "expected a digit")))]
-  [else (number-digit? c)])
-
 (define-λcase number-start?
-  [(#\.) (number-digit-or-period? #\.)]
-  [(#\0) (λcase [(#\.) number-digit?]) ]
-  [(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-digit-or-period?])
+  [(#\.) (number-more? #\.)]
+  [(#\0) (λcase [(#\.) number-digit-or-exponent?]) ]
+  [(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-more?])
+
+(define-λcase number-more?
+  #:char-id c
+  [(#\e #\E) number-digit-or-sign?]
+  [(#\.) (λ (next-c)
+           (or (number-digit-or-exponent? next-c)
+               (error "expected a digit")))]
+  [else (and (number-digit? c) number-more?)])
+
+(define-λcase number-digit-or-sign?
+  #:char-id c
+  [(#\+ #\-) number-digit?]
+  [else (and (number-digit? c) number-digit?)])
+
+(define-λcase number-digit-or-exponent?
+  #:char-id c
+  [(#\e #\E) number-digit-or-sign?]
+  [else (and (number-digit? c) number-digit-or-exponent?)])
 
 (define-λcase number-digit?
   [(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-digit?])
@@ -304,8 +315,7 @@
     [(#\r) (values "\\r"  #\return)]
     [(#\n) (values "\\n"  #\newline)]
     [(#\t) (values "\\t"  #\tab)]
-    [else
-     (values (string chr) chr)]))
+    [else  (values (string #\\ chr) chr)]))
 
 (define (lua:read-long-brackets in [comment? #f] [partial? #f])
   (define open-brackets (take-while in (if comment? long-brackets-comment-start? long-brackets-start?)))
