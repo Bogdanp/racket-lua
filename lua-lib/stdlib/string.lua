@@ -3,7 +3,7 @@
 local str = racket["bytes"]
 local len = racket["bytes-length"]
 local ref = racket["bytes-ref"]
-local subbytes = racket.subbytes
+local sub = racket.subbytes
 
 local string = {}
 
@@ -54,7 +54,7 @@ function string.sub(s, i, j)
     if i > j then
         return ""
     end
-    return subbytes(s, i - 1, j)
+    return sub(s, i - 1, j)
 end
 
 return string
