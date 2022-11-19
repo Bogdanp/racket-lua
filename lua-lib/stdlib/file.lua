@@ -64,7 +64,7 @@ function file:read(...)
     local function go(fmt, ...)
         if fmt ~= nil then
             local res
-            if fmt == "a" then
+            if fmt == "a" or fmt == "*all" then
                 res = port_to_bytes(self._inp)
             elseif fmt == "l" then
                 res = read_bytes_line(self._inp)
