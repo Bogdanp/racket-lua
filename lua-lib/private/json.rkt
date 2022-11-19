@@ -47,7 +47,7 @@
       [(eq? v js-null) nil]
       [(boolean? v) v]
       [(number? v) v]
-      [(bytes? v)
+      [(string? v)
        (string->bytes/utf-8 v)]
       [(list? v)
        (apply make-table (map loop v))]
