@@ -26,8 +26,8 @@
          (lua:error (format "-: expected a number, received ~a" (lua:tostring v))))]))
 
 (define ((make-binop-dunder-proc who dunder-name) a b)
-  (define lhs-dunder-proc (and (table? a) (table-meta-ref a dunder-name)))
-  (define rhs-dunder-proc (and (table? b) (table-meta-ref b dunder-name)))
+  (define lhs-dunder-proc (table-meta-ref a dunder-name))
+  (define rhs-dunder-proc (table-meta-ref b dunder-name))
   (cond
     [(procedure? lhs-dunder-proc)
      (lua:adjust* (λ () (lhs-dunder-proc a b)))]
@@ -108,8 +108,8 @@
          (lua:error (format "~~: expected an integer, received ~a" (lua:tostring v))))]))
 
 (define ((make-bit-binop-dunder-proc who dunder-name) a b)
-  (define lhs-dunder-proc (and (table? a) (table-meta-ref a dunder-name)))
-  (define rhs-dunder-proc (and (table? b) (table-meta-ref b dunder-name)))
+  (define lhs-dunder-proc (table-meta-ref a dunder-name))
+  (define rhs-dunder-proc (table-meta-ref b dunder-name))
   (cond
     [(procedure? lhs-dunder-proc)
      (lua:adjust* (λ () (lhs-dunder-proc a b)))]

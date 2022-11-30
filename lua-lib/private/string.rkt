@@ -6,11 +6,15 @@
 
 (provide
  current-print-ids?
+ current-string-metatable
  lua:tostring
  lua:print)
 
 (define current-print-ids?
   (make-parameter #t))
+
+(define current-string-metatable
+  (make-parameter nil))
 
 (define (->string what v)
   (if (current-print-ids?)

@@ -13,6 +13,7 @@ local to_str = racket["bytes->string/locale"]
 local to_bytes = racket["string->bytes/locale"]
 
 local string = {}
+string.__index = string
 local function check(who, v, argn, typ)
     typ = typ or "string"
     if type(v) ~= typ then
@@ -31,6 +32,28 @@ local function indices(s, i, j)
         j = 1 + (j % len)
     end
     return i, j
+end
+
+local function numbers(who, a, b)
+    a = tonumber(a)
+    if not a then
+        error("string." .. who .. ": bad lhs; expected a numeric string")
+    end
+    b = tonumber(b)
+    if not a then
+        error("string." .. who .. ": bad rhs; expected a numeric string")
+    end
+    return a, b
+end
+
+function string.__add(a, b)
+    a, b = numbers("__add", a, b)
+    return a + b
+end
+
+function string.__mul(a, b)
+    a, b = numbers("__mul", a, b)
+    return a * b
 end
 
 function string.byte(s, i, j)

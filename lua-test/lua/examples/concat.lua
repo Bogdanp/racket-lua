@@ -17,3 +17,6 @@ local a = ConcatDebug.new('a')
 local b = ConcatDebug.new('b')
 local c = ConcatDebug.new('c')
 print(a .. b .. c)
+
+print(1 .. 2)
+print(1 .. "2" .. 3)

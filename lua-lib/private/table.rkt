@@ -5,7 +5,7 @@
          "nil.rkt")
 
 (lazy-require
- ["string.rkt" (lua:tostring)])
+ ["string.rkt" (current-string-metatable lua:tostring)])
 
 (provide
  table?
@@ -83,6 +83,8 @@
      (raise-lua-error #f (format "attempt to index a number~n  value: ~a~n  index: ~a" t (lua:tostring k)))]
     [(boolean? t)
      (raise-lua-error #f (format "attempt to index a bool~n  index: ~a" (lua:tostring k)))]
+    [(bytes? t)
+     (table-ref (current-string-metatable) k default-proc)]
     [else
      nil]))
 
@@ -124,9 +126,13 @@
 
 (define (lua:getmetatable t . _)
   (define meta
-    (if (table? t)
-        (table-meta t)
-        nil))
+    (cond
+      [(bytes? t)
+       (current-string-metatable)]
+      [(table? t)
+       (table-meta t)]
+      [else
+       nil]))
   (cond
     [(nil? meta) nil]
     [else (table-ref meta #"__metatable" (λ () meta))]))

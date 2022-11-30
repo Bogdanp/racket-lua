@@ -1,1 +1,1 @@
-"ok\nok\nfalse\n+: expected two numbers, received a and 1\nfalse\n1\nfalse\n1\nfalse\n5\n"
+"ok\nok\nfalse\nstring.__add: bad lhs; expected a numeric string\nfalse\n1\nfalse\n1\nfalse\n5\n"

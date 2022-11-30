@@ -24,3 +24,11 @@ print(string.rep("a", 1))
 print(string.rep("a", 4))
 print(string.rep("a", 4, " "))
 print(string.rep("abc", 4, ", "))
+
+print(getmetatable(""))
+print("1" + 2 + "3")
+print(1 + "2" + "3")
+print("1" * 5)
+
+local s = "abc"
+print(s:reverse())

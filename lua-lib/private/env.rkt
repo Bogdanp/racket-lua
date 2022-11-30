@@ -101,6 +101,11 @@
   (table-set! env name mod)
   (table-set! env #"select" (table-ref mod #"select")))
 
+(define (load-string.lua! env name)
+  (define mod (car (dynamic-require string.lua '#%chunk)))
+  (table-set! env name mod)
+  (current-string-metatable mod))
+
 (define current-standard-library-modules
   (make-parameter
    (list
@@ -113,7 +118,7 @@
     `(#"coroutine" . ,coroutine.lua) ;; depends on table.lua
     `(#"io"        . ,io.lua)        ;; depends on file.lua and os.lua
     `(#"math"      . ,math.lua)
-    `(#"string"    . ,string.lua))))
+    `(#"string"    . ,load-string.lua!))))
 
 (define (load-standard-library! env)
   (for ([p (in-list (current-standard-library-modules))])
