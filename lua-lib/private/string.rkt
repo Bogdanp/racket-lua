@@ -26,6 +26,24 @@
       (format "<~a: 0x~a>" what (number->string (eq-hash-code v) 16))
       (format "<~a>" what)))
 
+(define (lua:toliteral v)
+  (cond
+    [(eq? v #t)  "true"]
+    [(eq? v #f)  "false"]
+    [(eq? v nil) "nil"]
+    [(exact-integer? v)
+     (number->string v 10)]
+    [(number? v)
+     (~a "0x"
+         (~r v
+             #:base 16
+             #:notation 'exponential
+             #:format-exponent "p"))]
+    [(bytes? v)
+     (quote-string (bytes->string/utf-8 v))]
+    [else
+     (raise-lua-error 'string.format "value has no literal form")]))
+
 (define (lua:tostring v . _)
   (define str
     (cond
@@ -56,20 +74,6 @@
       (display #\tab))
     (display (lua:tostring v)))
   (newline))
-
-(define (lua:toliteral v)
-  (cond
-    [(eq? v #t)  "true"]
-    [(eq? v #f)  "false"]
-    [(eq? v nil) "nil"]
-    [(exact-integer? v)
-     (number->string v 10)]
-    [(number? v)
-     (~a "0x" (~r v #:notation 'exponential #:base 16 #:format-exponent "p"))]
-    [(bytes? v)
-     (quote-string (bytes->string/utf-8 v))]
-    [else
-     (raise-lua-error 'string.format "value has no literal form")]))
 
 (define custom-printf-table
   (hasheq #\q (lambda (flags arg width precision)
