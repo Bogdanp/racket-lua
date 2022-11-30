@@ -103,6 +103,7 @@
 
 (define (load-string.lua! env name)
   (define mod (car (dynamic-require string.lua '#%chunk)))
+  (table-set! mod #"format" lua:format)
   (table-set! env name mod)
   (current-string-metatable mod))
 

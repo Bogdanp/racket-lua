@@ -83,7 +83,7 @@ function string.find(s, pattern, init, plain)
 end
 
 function string.format(fmt, ...)
-    error"string.format: not implemented"
+    error"string.format: bootstrap failed"
 end
 
 function string.gmatch(s, pattern, init)

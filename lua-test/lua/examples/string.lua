@@ -32,3 +32,5 @@ print("1" * 5)
 
 local s = "abc"
 print(s:reverse())
+
+print(string.format("%08.02f", 1.2345))

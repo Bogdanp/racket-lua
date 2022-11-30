@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/format
+(require (only-in iso-printf sprintf)
+         racket/format
          "nil.rkt"
          "table.rkt")
 
@@ -8,7 +9,8 @@
  current-print-ids?
  current-string-metatable
  lua:tostring
- lua:print)
+ lua:print
+ lua:format)
 
 (define current-print-ids?
   (make-parameter #t))
@@ -51,3 +53,6 @@
       (display #\tab))
     (display (lua:tostring v)))
   (newline))
+
+(define (lua:format fmt . args)
+  (string->bytes/utf-8 (apply sprintf (bytes->string/utf-8 fmt) args)))
