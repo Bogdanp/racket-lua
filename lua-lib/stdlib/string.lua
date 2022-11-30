@@ -40,7 +40,7 @@ local function numbers(who, a, b)
         error("string." .. who .. ": bad lhs; expected a numeric string")
     end
     b = tonumber(b)
-    if not a then
+    if not b then
         error("string." .. who .. ": bad rhs; expected a numeric string")
     end
     return a, b
