@@ -88,33 +88,18 @@
        (for/fold ([escaped? #f])
                  ([c (in-string s)])
          (case c
-           [(#\newline)
+           [(#\\ #\" #\newline)
             (cond
               [escaped?
                (begin0 #f
-                 (write-char #\newline out))]
-              [else
-               (begin0 #f
-                 (write-char #\\ out)
-                 (write-char #\newline out))])]
-           [(#\")
-            (cond
-              [escaped?
-               (begin0 #f
-                 (write-char #\" out))]
-              [else
-               (begin0 #f
-                 (write-char #\\ out)
-                 (write-char #\" out))])]
-           [(#\\)
-            (cond
-              [escaped?
-               (begin0 #f
-                 (write-char #\\ out)
-                 (write-char #\\ out))]
-              [else
+                 (write-char c out))]
+              [(eqv? #\\ c)
                (begin0 #t
-                 (write-char #\\ out))])]
+                 (write-char c out))]
+              [else
+               (begin0 #f
+                 (write-char #\\ out)
+                 (write-char c out))])]
            [else
             (begin0 #f
               (write-char c out))])))))
