@@ -1,7 +1,10 @@
 #lang racket/base
 
-(require (only-in iso-printf sprintf)
+(require iso-printf
+         iso-printf/custom
          racket/format
+         racket/port
+         "exn.rkt"
          "nil.rkt"
          "table.rkt")
 
@@ -30,14 +33,14 @@
       [(eq? v #f) "false"]
       [(eq? v nil) "nil"]
       [(table? v)
-       (define custom-tostring
+       (define dunder-proc
          (table-meta-ref v #"__tostring"))
        (cond
-         [(nil? custom-tostring)
+         [(nil? dunder-proc)
           (define name (table-meta-ref v #"__name" (λ () #"table")))
           (->string name v)]
          [else
-          (custom-tostring v)])]
+          (dunder-proc v)])]
       [(procedure? v)
        (->string "function" v)]
       [else
@@ -54,5 +57,65 @@
     (display (lua:tostring v)))
   (newline))
 
+(define (lua:toliteral v)
+  (cond
+    [(eq? v #t)  "true"]
+    [(eq? v #f)  "false"]
+    [(eq? v nil) "nil"]
+    [(exact-integer? v)
+     (number->string v 10)]
+    [(number? v)
+     (~a "0x" (~r v #:notation 'exponential #:base 16 #:format-exponent "p"))]
+    [(bytes? v)
+     (quote-string (bytes->string/utf-8 v))]
+    [else
+     (raise-lua-error 'string.format "value has no literal form")]))
+
+(define custom-printf-table
+  (hasheq #\q (lambda (flags arg width precision)
+                (define (formatter _precision v)
+                  (values "" (lua:toliteral v)))
+                (directive arg flags width precision formatter nil #t))))
+
 (define (lua:format fmt . args)
-  (string->bytes/utf-8 (apply sprintf (bytes->string/utf-8 fmt) args)))
+  (parameterize ([current-custom-conversions custom-printf-table])
+    (string->bytes/utf-8 (apply sprintf (bytes->string/utf-8 fmt) args))))
+
+(define (quote-string s)
+  (define escaped
+    (call-with-output-string
+     (lambda (out)
+       (for/fold ([escaped? #f])
+                 ([c (in-string s)])
+         (case c
+           [(#\newline)
+            (cond
+              [escaped?
+               (begin0 #f
+                 (write-char #\newline out))]
+              [else
+               (begin0 #f
+                 (write-char #\\ out)
+                 (write-char #\newline out))])]
+           [(#\")
+            (cond
+              [escaped?
+               (begin0 #f
+                 (write-char #\" out))]
+              [else
+               (begin0 #f
+                 (write-char #\\ out)
+                 (write-char #\" out))])]
+           [(#\\)
+            (cond
+              [escaped?
+               (begin0 #f
+                 (write-char #\\ out)
+                 (write-char #\\ out))]
+              [else
+               (begin0 #t
+                 (write-char #\\ out))])]
+           [else
+            (begin0 #f
+              (write-char c out))])))))
+  (string-append "\"" escaped "\""))

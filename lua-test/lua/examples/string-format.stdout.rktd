@@ -1,0 +1,1 @@
+"123456\ntrue\nfalse\nnil\nfalse\tvalue has no literal form\n1 0x1.3ae148p+00\n\"hello, world!\"\n\"  hello, \\\"world!\\\"\\\n\"\n                                                                  0x1.3ae148p+00\n"
