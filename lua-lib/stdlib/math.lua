@@ -133,8 +133,8 @@ end
 
 function math.randomseed(x, y)
     x = x or os.time()
-    y = y or os.clock()
-    random_seed((x ^ y) & 0x7FFFFFFF)
+    y = y or 0
+    random_seed((x ~ y) & 0x7FFFFFFF)
     return x, y
 end
 
