@@ -30,6 +30,7 @@
                             [current-print-ids? #f]
                             [current-error-port out]
                             [current-output-port out])
+               (dynamic-require `(submod (file ,(path->string path)) configure-runtime) #f void)
                (dynamic-require `(file ,(path->string path)) #f))))))
       (with-handlers ([exn:fail:filesystem?
                        (λ (_)

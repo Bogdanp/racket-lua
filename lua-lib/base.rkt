@@ -148,9 +148,9 @@
   (syntax-parse stx
     [(_ form ...)
      #'(#%module-begin
+        (#%declare #:realm lua)
         (module configure-runtime racket/base
           (require lua/lang/runtime-config))
-        (#%declare #:realm lua)
         form ...)]))
 
 (define-syntax (lua:procedure-rename stx)
