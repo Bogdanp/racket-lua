@@ -323,9 +323,15 @@
 (define (lua:string-escape chr)
   (case chr
     [(#\\) (values "\\\\" #\\)]
+    [(#\a) (values "\\a"  #\u007)]
+    [(#\b) (values "\\b"  #\backspace)]
+    [(#\f) (values "\\f"  #\page)]
     [(#\r) (values "\\r"  #\return)]
     [(#\n) (values "\\n"  #\newline)]
     [(#\t) (values "\\t"  #\tab)]
+    [(#\v) (values "\\v"  #\vtab)]
+    [(#\[) (values "\\["  #\[)]
+    [(#\]) (values "\\["  #\])]
     [else  (values (string #\\ chr) chr)]))
 
 (define (lua:read-long-brackets in [comment? #f] [partial? #f])
