@@ -74,11 +74,11 @@
   (define-values (line col pos)
     (port-next-location in))
 
-  (define (make-token type str [val str])
+  (define (make-token type [str (read-string 1 in)] [val str])
     (token type str val line col pos))
 
   (match (peek-char in)
-    [(? eof-object?) (make-token 'eof        (read-string 1 in))]
+    [(? eof-object?) (make-token 'eof eof)]
     [(? whitespace?) (make-token 'whitespace (read-whitespace in))]
 
     [#\- #:when (equal? "--" (peek-string 2 0 in))
@@ -98,16 +98,16 @@
     [#\: #:when (equal? "::" (peek-string 2 0 in))
      (make-token 'coloncolon (read-string 2 in))]
     [#\:
-     (make-token 'colon (read-string 1 in))]
+     (make-token 'colon)]
 
-    [#\; (make-token 'semicolon  (read-string 1 in))]
-    [#\( (make-token 'lparen     (read-string 1 in))]
-    [#\) (make-token 'rparen     (read-string 1 in))]
-    [#\[ (make-token 'lsqbrace   (read-string 1 in))]
-    [#\] (make-token 'rsqbrace   (read-string 1 in))]
-    [#\{ (make-token 'lcubrace   (read-string 1 in))]
-    [#\} (make-token 'rcubrace   (read-string 1 in))]
-    [#\, (make-token 'comma      (read-string 1 in))]
+    [#\; (make-token 'semicolon)]
+    [#\( (make-token 'lparen)]
+    [#\) (make-token 'rparen)]
+    [#\[ (make-token 'lsqbrace)]
+    [#\] (make-token 'rsqbrace)]
+    [#\{ (make-token 'lcubrace)]
+    [#\} (make-token 'rcubrace)]
+    [#\, (make-token 'comma)]
 
     [#\. #:when (equal? "..." (peek-string 3 0 in))
      (make-token 'dotdotdot (read-string 3 in) '...)]
@@ -151,24 +151,23 @@
 ;; helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (read-whitespace in)
-  (take-while in whitespace?))
+  (read-string-while in whitespace?))
 
-(define (take-while in p)
+(define (read-string-while in p)
+  (call-with-output-string
+   (lambda (out)
+     (read-while in p (λ (c) (write-char c out))))))
+
+(define (read-while in p proc)
   (define-values (line col pos)
     (port-next-location in))
-
-  (with-output-to-string
-    (lambda ()
-      (let loop ([p p]
-                 [c (peek-char in)]
-                 [span 0])
-        (define next-p
-          (with-handlers ([exn:fail? (λ (e) (raise-lexer-error (exn-message e) line col pos))])
-            (p c)))
-
-        (when next-p
-          (display (read-char in))
-          (loop next-p (peek-char in) (add1 span)))))))
+  (with-handlers ([exn:fail? (λ (e) (raise-lexer-error (exn-message e) line col pos))])
+    (let loop ([c (peek-char in)] [p p])
+      (define next-p
+        (p c))
+      (when next-p
+        (proc (read-char in))
+        (loop (peek-char in) next-p)))))
 
 
 ;; matchers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -208,7 +207,7 @@
   (and
    (char? c)
    (or (char=? c #\_)
-       (member (char-general-category c) char-categories))
+       (memq (char-general-category c) char-categories))
    name-more?))
 
 (define name-start? (make-name-predicate '(ll lu)))
@@ -271,7 +270,7 @@
 ;; readers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ((make-reader p f) in)
-  (define s (take-while in p))
+  (define s (read-string-while in p))
   (values s (f s)))
 
 (define lua:read-name
@@ -335,7 +334,7 @@
     [else  (values (string #\\ chr) chr)]))
 
 (define (lua:read-long-brackets in [comment? #f] [partial? #f])
-  (define open-brackets (take-while in (if comment? long-brackets-comment-start? long-brackets-start?)))
+  (define open-brackets (read-string-while in (if comment? long-brackets-comment-start? long-brackets-start?)))
   (define close-brackets (string-replace open-brackets "[" "]"))
   (define close-brackets-re (regexp (regexp-quote close-brackets)))
   (define-values (str-no-open close-brackets-len)
