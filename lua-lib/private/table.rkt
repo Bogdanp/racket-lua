@@ -47,7 +47,9 @@
           (values kvs (add1 index))]
          [(and (pair? arg)
                (not (list? arg)))
-          (values (cons arg kvs) index)]
+          (if (nil? (cdr arg))
+              (values kvs index)
+              (values (cons arg kvs) index))]
          [else
           (values (cons (cons index arg) kvs) (add1 index))]))))
   (table nil ht))
