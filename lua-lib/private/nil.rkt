@@ -10,8 +10,10 @@
  falsy?
  truthy?)
 
-(define nil  null)
-(define nil? null?)
+(define nil
+  (string->uninterned-symbol "nil"))
+(define (nil? v)
+  (eq? v nil))
 
 (define-syntax (nil~> stx)
   (syntax-parse stx
