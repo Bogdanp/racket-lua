@@ -70,4 +70,17 @@
              6
              220))
          (29 . #s(token rparen ")" ")" 23 4 243))
-         (30 . #s(token whitespace "\n" "\n" 23 5 244)))
+         (30 . #s(token whitespace "\n" "\n" 23 5 244))
+         (31 . #s(token name "print" print 24 0 245))
+         (32 . #s(token lparen "(" "(" 24 5 250))
+         (33
+          .
+          #s(token
+             string
+             "[===[;; test\n  λ\n  ]===]"
+             #";; test\n  \316\273\n  "
+             24
+             6
+             251))
+         (34 . #s(token rparen ")" ")" 26 7 275))
+         (35 . #s(token whitespace "\n" "\n" 26 8 276)))

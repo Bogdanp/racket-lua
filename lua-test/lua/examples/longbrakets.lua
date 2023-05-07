@@ -21,3 +21,6 @@ print([[
 print([==[
   [[nesting]]
 ]==])
+print([===[;; test
+  λ
+  ]===])
