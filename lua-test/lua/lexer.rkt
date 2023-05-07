@@ -2,6 +2,7 @@
 
 (require lua/lang/lexer
          racket/path
+         racket/pretty
          racket/runtime-path
          rackunit)
 
@@ -48,7 +49,7 @@
                          (call-with-output-file tokens-path
                            #:exists 'replace
                            (lambda (out)
-                             (write tokens out))))])
+                             (pretty-write tokens out))))])
         (define expected-tokens
           (call-with-input-file tokens-path read))
         (define n

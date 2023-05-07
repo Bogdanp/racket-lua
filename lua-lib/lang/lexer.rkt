@@ -337,16 +337,15 @@
   (define open-brackets (read-string-while in (if comment? long-brackets-comment-start? long-brackets-start?)))
   (define close-brackets (string-replace open-brackets "[" "]"))
   (define close-brackets-re (regexp (regexp-quote close-brackets)))
-  (define-values (str-no-open close-brackets-len)
+  (define-values (bs-no-open close-brackets-len)
     (match (regexp-match-peek-positions close-brackets-re in)
-      [#f #:when partial? (values (port->string in) 0)]
+      [#f #:when partial? (values (port->bytes in) 0)]
       [#f (error (format "no matching '~a' for '~a'" close-brackets open-brackets))]
-      [`((,_ . ,end-pos)) (values (read-string end-pos in) (string-length open-brackets))]))
+      [`((,_ . ,end-pos)) (values (read-bytes end-pos in) (string-length open-brackets))]))
   (define content-bs
-    (let ([trimmed-str (cond
-                         [(regexp-match? #rx"^\r\n" str-no-open) (substring str-no-open 2)]
-                         [(regexp-match? #rx"^\n"   str-no-open) (substring str-no-open 1)]
-                         [else str-no-open])])
-      (string->bytes/utf-8
-       (substring trimmed-str 0 (- (string-length trimmed-str) close-brackets-len)))))
-  (values (string-append open-brackets str-no-open) content-bs))
+    (let ([trimmed-bs (cond
+                        [(regexp-match? #rx#"^\r\n" bs-no-open) (subbytes bs-no-open 2)]
+                        [(regexp-match? #rx#"^\n"   bs-no-open) (subbytes bs-no-open 1)]
+                        [else bs-no-open])])
+      (subbytes trimmed-bs 0 (- (bytes-length trimmed-bs) close-brackets-len))))
+  (values (string-append open-brackets (bytes->string/utf-8 bs-no-open)) content-bs))

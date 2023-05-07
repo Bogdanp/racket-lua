@@ -381,7 +381,7 @@
   (match (lexer-peek l)
     [(rparen)
      (begin0 null
-       (skip ))]
+       (skip l 'rparen))]
     [(lparen)
      (skip l 'lparen)
      (match (lexer-peek l)
