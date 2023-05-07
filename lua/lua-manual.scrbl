@@ -109,6 +109,31 @@ executed or that are outside its scope.
 Integers are backed by regular Racket @racket[integer?] values, so
 they do not overflow.
 
+
+@section{REPL}
+
+You can run a Lua REPL by loading the @tt{lua/repl} module:
+
+@verbatim{  racket -l lua/repl -i  }
+
+Note that unlike a typical REPL, since lua is statement oriented, you
+must @tt{return} values for them to be printed.  Multi-line statements
+can be entered by bracketing them with @tt[":{"] and @tt[":}"].  For
+example:
+
+@verbatim|{
+> :{
+| do
+|   local x = 42
+|   print(x)
+| end
+| :}
+42
+}|
+
+Individual @tt{local} declarations at the top level have no effect.
+
+
 @section{Reference}
 @subsection{Values}
 @defmodule[lua/value]

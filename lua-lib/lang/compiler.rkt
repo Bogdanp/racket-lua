@@ -12,6 +12,9 @@
 (provide
  compile-chunk)
 
+(module+ private
+  (provide compile-block))
+
 (define (compile-chunk chunk)
   (define loc (Node-loc chunk))
   (define return? (needs-return? chunk))
