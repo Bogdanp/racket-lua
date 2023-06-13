@@ -437,26 +437,24 @@
   (define table
     (Table
      (token-loc (expect l 'lcubrace))
-     (match (lexer-peek l)
-       [(rcubrace) null]
-       [_ (parse-fields l)])))
+     (reverse
+      (let loop ([fields null])
+        (match (lexer-peek l)
+          [(rcubrace) fields]
+          [_
+           (define fld
+             (parse-field l))
+           (match (lexer-peek l)
+             [(comma)
+              (skip l 'comma)
+              (loop (cons fld fields))]
+             [(semicolon)
+              (skip l 'semicolon)
+              (loop (cons fld fields))]
+             [_
+              (cons fld fields)])])))))
   (begin0 table
     (skip l 'rcubrace)))
-
-(define (parse-fields l)
-  (reverse
-   (let loop ([fields null])
-     (define field
-       (parse-field l))
-     (match (lexer-peek l)
-       [(comma)
-        (skip l 'comma)
-        (loop (cons field fields))]
-       [(semicolon)
-        (skip l 'semicolon)
-        (loop (cons field fields))]
-       [_
-        (cons field fields)]))))
 
 (define (parse-field l)
   (match (lexer-peek l)
