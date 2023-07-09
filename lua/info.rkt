@@ -9,4 +9,4 @@
                      "sandbox-lib"
                      "scribble-lib"))
 (define implies '("lua-lib"))
-(define scribblings '(("lua-manual.scrbl")))
+(define scribblings '(("lua-manual.scrbl" () (language))))
