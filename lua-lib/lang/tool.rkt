@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/class
+         racket/port
          racket/string
          "lexer.rkt")
 
@@ -38,51 +39,40 @@
   (regexp (string-append "[" (regexp-quote (string #\( #\[ #\{)) "]$")))
 
 (define dedent-re
-  #px"[[:space:]]{2,}(elseif|else|end|until|[)}\\]])[[:space:]]*")
+  #px"[[:space:]]{4,}(elseif|else|end|until|[)}\\]])[[:space:]]*")
 
-(define tab-size 2)
-
-(define (save-excursion editor proc)
-  (define pos #f)
-  (dynamic-wind
-    (lambda ()
-      (send editor begin-edit-sequence #f)
-      (set! pos (send editor get-start-position)))
-    (lambda ()
-      (proc editor))
-    (lambda ()
-      (send editor set-position pos)
-      (send editor end-edit-sequence))))
-
-(define (get-line-span editor)
-  (define pos (send editor get-start-position))
-  (define line (send editor position-line pos))
-  (define start-pos (send editor line-start-position line))
-  (define end-pos (send editor line-end-position line))
-  (values start-pos end-pos))
-
-(define (get-line-text editor)
-  (define-values (start-pos end-pos)
-    (get-line-span editor))
-  (send editor get-text start-pos end-pos))
+(define tab-size 4)
 
 (define (get-indent-size line)
   (string-length (car (regexp-match #px"[[:space:]]*" line))))
 
-(define (get-indentation editor _pos)
-  (save-excursion
-   editor
-   (lambda (_)
-     (define this-line
-       (get-line-text editor))
-     (cond
-       [(regexp-match dedent-re this-line)
-        (- (get-indent-size this-line) tab-size)]
-       [else
-        (send editor move-position 'up #f 'line)
-        (define prev-line (get-line-text editor))
-        (define prev-indent (get-indent-size prev-line))
-        (if (or (regexp-match? indent-phrase-re prev-line)
-                (regexp-match? indent-sym-re prev-line))
-            (+ prev-indent tab-size)
-            prev-indent)]))))
+;; FIXME: This isn't very efficient, but I can't figure out a non-hacky
+;; way to get the previous line's indentation by limiting myself to the
+;; color-textoid<%> interface so it'll have to do for now.
+;;
+;; xref: https://github.com/greghendershott/racket-mode/issues/668#issuecomment-1728081515
+(define (get-indentation editor pos)
+  (define end-pos
+    (send editor last-position))
+  (define the-text
+    (string-append (send editor get-text 0 end-pos) "\n"))
+  (define-values (prev-line this-line)
+    (call-with-input-string the-text
+      (lambda (in)
+        (for/fold ([cursor 0]
+                   [prev-line #f]
+                   [this-line #f]
+                   #:result (values prev-line this-line))
+                  ([line (in-lines in 'linefeed)])
+          #:break (> cursor pos)
+          (values (+ cursor (string-length line) 1) this-line line)))))
+  (cond
+    [(not prev-line) #f]
+    [(regexp-match-exact? dedent-re this-line)
+     (- (get-indent-size this-line) tab-size)]
+    [else
+     (define prev-indent (get-indent-size prev-line))
+     (if (or (regexp-match? indent-phrase-re prev-line)
+             (regexp-match? indent-sym-re prev-line))
+         (+ prev-indent tab-size)
+         prev-indent)]))
