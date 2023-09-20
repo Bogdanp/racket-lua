@@ -1,9 +1,12 @@
 #lang racket/base
 
-(require "lexer.rkt")
+(require racket/class
+         racket/string
+         "lexer.rkt")
 
 (provide
- get-color-token)
+ get-color-token
+ get-indentation)
 
 (define (get-color-token in)
   (with-handlers ([exn:fail:lexer?
@@ -26,3 +29,60 @@
        [else #f])
      (and (not (eof-object? s))    (token-pos t))
      (and (not (eof-object? s)) (+ (token-pos t) (string-length s))))))
+
+(define indent-phrase-re
+  (let ([phrases '("function" "local function" "if" "elseif" "else" "for" "while" "do" "repeat")])
+    (pregexp (string-append "[[:space:]]*" "(" (string-join (map regexp-quote phrases) "|") ")"))))
+
+(define indent-sym-re
+  (regexp (string-append "[" (regexp-quote (string #\( #\[ #\{)) "]$")))
+
+(define dedent-re
+  #px"[[:space:]]{2,}(elseif|else|end|until|[)}\\]])[[:space:]]*")
+
+(define tab-size 2)
+
+(define (save-excursion editor proc)
+  (define pos #f)
+  (dynamic-wind
+    (lambda ()
+      (send editor begin-edit-sequence #f)
+      (set! pos (send editor get-start-position)))
+    (lambda ()
+      (proc editor))
+    (lambda ()
+      (send editor set-position pos)
+      (send editor end-edit-sequence))))
+
+(define (get-line-span editor)
+  (define pos (send editor get-start-position))
+  (define line (send editor position-line pos))
+  (define start-pos (send editor line-start-position line))
+  (define end-pos (send editor line-end-position line))
+  (values start-pos end-pos))
+
+(define (get-line-text editor)
+  (define-values (start-pos end-pos)
+    (get-line-span editor))
+  (send editor get-text start-pos end-pos))
+
+(define (get-indent-size line)
+  (string-length (car (regexp-match #px"[[:space:]]*" line))))
+
+(define (get-indentation editor _pos)
+  (save-excursion
+   editor
+   (lambda (_)
+     (define this-line
+       (get-line-text editor))
+     (cond
+       [(regexp-match dedent-re this-line)
+        (- (get-indent-size this-line) tab-size)]
+       [else
+        (send editor move-position 'up #f 'line)
+        (define prev-line (get-line-text editor))
+        (define prev-indent (get-indent-size prev-line))
+        (if (or (regexp-match? indent-phrase-re prev-line)
+                (regexp-match? indent-sym-re prev-line))
+            (+ prev-indent tab-size)
+            prev-indent)]))))

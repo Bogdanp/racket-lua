@@ -5,7 +5,8 @@
   #:whole-body-readers? #t
   #:info get-info
 
-  (require "read-syntax.rkt")
+  (require "read-syntax.rkt"
+           "tool.rkt")
 
   (define (custom-read _in)
     (error 'read "not supported"))
@@ -15,7 +16,8 @@
 
   (define (get-info key defval default)
     (case key
-      [(color-lexer) (dynamic-require 'lua/lang/tool 'get-color-token)]
+      [(color-lexer) get-color-token]
       [(drracket:default-filters) '(["Lua Script" "*.lua"])]
       [(drracket:default-extension) "lua"]
+      [(drracket:indentation) get-indentation]
       [else (default key defval)])))
