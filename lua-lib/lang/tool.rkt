@@ -21,7 +21,7 @@
      (case (token-type t)
        [(whitespace) 'white-space]
        [(lparen rparen lsqbrace rsqbrace lcubrace rcubrace comma commacomma dot dotdot dotdotdot) 'parenthesis]
-       [(op keyword) 'hash-colon-keyword]
+       [(op keyword) 'keyword]
        [(number) 'constant]
        [(name) 'symbol]
        [else (token-type t)])
