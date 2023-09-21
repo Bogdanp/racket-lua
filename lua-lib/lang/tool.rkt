@@ -52,12 +52,9 @@
 ;;
 ;; xref: https://github.com/greghendershott/racket-mode/issues/668#issuecomment-1728081515
 (define (get-indentation editor pos)
-  (define end-pos
-    (send editor last-position))
-  (define the-text
-    (string-append (send editor get-text 0 end-pos) "\n"))
   (define-values (prev-line this-line)
-    (call-with-input-string the-text
+    (call-with-input-string
+      (string-append (send editor get-text 0 'eof) "\n")
       (lambda (in)
         (for/fold ([cursor 0]
                    [prev-line #f]
