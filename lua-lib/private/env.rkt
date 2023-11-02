@@ -98,6 +98,7 @@
 
 (define (load-table.lua! env name)
   (define mod (car (dynamic-require table.lua '#%chunk)))
+  (table-set! mod #"sort" table-sort!)
   (table-set! env name mod)
   (table-set! env #"select" (table-ref mod #"select")))
 

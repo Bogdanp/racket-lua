@@ -97,4 +97,9 @@ function table.concat(t, sep, i, j)
     return call_bytes(impl)
 end
 
+-- Replaced during bootstrap.
+function table.sort(...)
+    error("table.sort: implementation missing")
+end
+
 return table

@@ -5,7 +5,8 @@
          "nil.rkt")
 
 (lazy-require
- ["string.rkt" (current-string-metatable lua:tostring)])
+ ["string.rkt" (current-string-metatable lua:tostring)]
+ ["relation.rkt" (lua:<)])
 
 (provide
  table?
@@ -19,6 +20,8 @@
  lua:rawset
  table-keys
  table-values
+ table-sort!
+ table->list
 
  lua:getmetatable
  lua:setmetatable)
@@ -144,3 +147,15 @@
     (raise-argument-error 'setmetatable "a table" 1 t meta))
   (begin0 t
     (set-table-meta! t meta)))
+
+(define (table-sort! t [cmp lua:<])
+  (define sorted-values
+    (sort (table-values t) cmp))
+  (hash-clear! (table-ht t))
+  (for ([i (in-naturals 1)]
+        [v (in-list sorted-values)])
+    (hash-set! (table-ht t) i v)))
+
+(define (table->list t)
+  (for/list ([i (in-range 1 (add1 (table-length t)))])
+    (table-ref t i)))

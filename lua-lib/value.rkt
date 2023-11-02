@@ -15,7 +15,9 @@
   [table-set! (-> table? lua-value/c lua-value/c void?)]
   [table-length (-> table? exact-nonnegative-integer?)]
   [rename lua:getmetatable table-metatable (-> table? (or/c nil? table?))]
-  [rename lua:setmetatable set-table-metatable! (-> table? table? table?)]))
+  [rename lua:setmetatable set-table-metatable! (-> table? table? table?)]
+  [table-sort! (->* (table?) ((-> any/c any/c boolean?)) void?)]
+  [table->list (-> table? list?)]))
 
 (define lua-value/c
   (or/c boolean? bytes? number? nil? procedure? table?))
