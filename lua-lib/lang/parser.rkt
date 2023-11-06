@@ -3,6 +3,7 @@
 (require (for-syntax racket/base
                      syntax/parse)
          racket/match
+         racket/path
          syntax/parse
          syntax/readerr
          "ast.rkt"
@@ -508,9 +509,33 @@
 ;; helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (raise-parse-error t message)
+  (define message+context
+    (cond
+      [(and (path? (current-source-name))
+            (token-line t)
+            (token-col t))
+       (define source-line
+         (with-handlers ([exn:fail:filesystem? (λ (_) #f)])
+           (call-with-input-file (current-source-name)
+             (lambda (in)
+               (for/first ([(line idx) (in-indexed (in-lines in))]
+                           #:when (= idx (sub1 (token-line t))))
+                 line)))))
+       (define caret-line
+         (and source-line
+              (let ([line (make-string (string-length source-line) #\space)])
+                (begin0 line
+                  (string-set! line (token-col t) #\^)))))
+       (cond
+         [(and source-line caret-line)
+          (format "~a~n  source context:~n    ~a~n    ~a" message source-line caret-line)]
+         [else message])]
+      [else message]))
   (raise-read-error
-   message
-   (current-source-name)
+   message+context
+   (if (path? (current-source-name))
+       (file-name-from-path (current-source-name))
+       (current-source-name))
    (token-line t)
    (token-col t)
    (token-pos t)
@@ -518,7 +543,7 @@
 
 (define (expected what tok [accessor token-str])
   (define message
-    (format "expected ~a but found ~a" what (accessor tok)))
+    (format "expected ~a but found '~a'" what (accessor tok)))
   (raise-parse-error tok message))
 
 (define (expect l type [val #f])
