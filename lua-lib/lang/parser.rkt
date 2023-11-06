@@ -467,7 +467,7 @@
      (FieldExpr loc field-expr value-expr)]
     [(and (name _) tok)
      (define loc (token-loc tok))
-     (define name-or-expr (parse-primaryexpr l))
+     (define name-or-expr (parse-expr l))
      (match (lexer-peek l)
        [(op '=)
         #:when (Name? name-or-expr)
