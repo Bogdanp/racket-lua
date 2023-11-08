@@ -542,8 +542,12 @@
    #f))
 
 (define (expected what tok [accessor token-str])
+  (define found
+    (accessor tok))
   (define message
-    (format "expected ~a but found '~a'" what (accessor tok)))
+    (if (eof-object? found)
+        (format "expected ~a but found EOF" what)
+        (format "expected ~a but found '~a'" what found)))
   (raise-parse-error tok message))
 
 (define (expect l type [val #f])
