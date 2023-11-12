@@ -27,7 +27,9 @@
  lua:getmetatable
  lua:setmetatable)
 
-(struct table ([meta #:mutable] ht)
+;; hi: The largest inserted integer index. Serves as the upper bound
+;; for finding borders in sequences.
+(struct table ([meta #:mutable] [hi #:mutable] ht)
   #:transparent
   #:property prop:procedure
   (lambda (self . args)
@@ -40,25 +42,43 @@
        (raise-lua-error #f (format "table ~a is not callable" (lua:tostring self)))])))
 
 (define (make-table . args)
-  (define t (table nil (make-hash)))
-  (begin0 t
-    (for/fold ([index 1])
+  (define t (table nil 0 (make-hash)))
+  (define index
+    (for/fold ([index 1] [hi 1] #:result hi)
               ([arg (in-list args)])
       (match arg
         [(? nil?)
-         (add1 index)]
+         (values (add1 index) hi)]
         [(cons k (and (not (? pair?)) v))
          (unless (nil? v)
            (lua:rawset t k v))
-         index]
+         (values index hi)]
         [_
          (lua:rawset t index arg)
-         (add1 index)]))))
+         (values (add1 index) index)])))
+  (begin0 t
+    (set-table-hi! t index)))
 
 (define (table-length t)
-  (define ints
-    (filter integer? (hash-keys (table-ht t))))
-  (apply max 0 ints))
+  (define ht (table-ht t))
+  (define hi (table-hi t))
+  (cond
+    [(hash-empty? ht) 0]
+    [(and (hash-has-key? ht hi)
+          (not (hash-has-key? ht (add1 hi))))
+     (table-hi t)]
+    [else
+     (let loop ([lo 0]
+                [hi hi])
+       (define i
+         (max 1 (quotient (+ lo hi) 2)))
+       (if (hash-has-key? ht i)
+           (if (hash-has-key? ht (add1 i))
+               (loop (add1 i) hi)
+               i)
+           (if (= i 1)
+               0
+               (loop lo (sub1 i)))))]))
 
 (define (table-meta-ref t k [default-proc (λ () nil)])
   (define res
@@ -118,6 +138,9 @@
     [(nil? v)
      (hash-remove! (table-ht t) k)]
     [else
+     (when (and (integer? k)
+                (> k (table-hi t)))
+       (set-table-hi! t k))
      (hash-set! (table-ht t) k v)]))
 
 (define (table-keys t)
