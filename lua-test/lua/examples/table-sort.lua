@@ -22,3 +22,9 @@ table.sort(t)
 for k, v in pairs(t) do
     print(k, v)
 end
+
+t = { a = 1; b = 2 }
+table.sort(t)
+for k, v in pairs(t) do
+    print(k, v)
+end

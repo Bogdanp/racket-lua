@@ -169,11 +169,16 @@
     (set-table-meta! t meta)))
 
 (define (table-sort! t [cmp lua:<])
-  (define sorted-values
-    (sort (table-values t) cmp))
-  (hash-clear! (table-ht t))
+  (define ht (table-ht t))
+  (define vs
+    (sort
+     (for/list ([idx (in-naturals 1)]
+                [v (in-table t)])
+       (begin0 v
+         (hash-remove! ht idx)))
+     cmp))
   (for ([i (in-naturals 1)]
-        [v (in-list sorted-values)])
+        [v (in-list vs)])
     (hash-set! (table-ht t) i v)))
 
 (define (in-table t)
