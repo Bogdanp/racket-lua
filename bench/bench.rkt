@@ -35,7 +35,8 @@
   (call-with-input-file HEAD port->string))
 
 (define lua
-  (find-executable-path "lua"))
+  (or (find-executable-path "lua")
+      (find-executable-path "lua5.4")))
 
 (define (run-lua . args)
   (match-define (list stdout _stdin _pid stderr control)
