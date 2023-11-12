@@ -43,21 +43,19 @@
 
 (define (make-table . args)
   (define t (table nil 0 (make-hash)))
-  (define index
-    (for/fold ([index 1] [hi 1] #:result hi)
+  (begin0 t
+    (for/fold ([index 1])
               ([arg (in-list args)])
       (match arg
         [(? nil?)
-         (values (add1 index) hi)]
+         (add1 index)]
         [(cons k (and (not (? pair?)) v))
          (unless (nil? v)
            (lua:rawset t k v))
-         (values index hi)]
+         index]
         [_
          (lua:rawset t index arg)
-         (values (add1 index) index)])))
-  (begin0 t
-    (set-table-hi! t index)))
+         (add1 index)]))))
 
 (define (table-length t)
   (define ht (table-ht t))
@@ -138,8 +136,7 @@
     [(nil? v)
      (hash-remove! (table-ht t) k)]
     [else
-     (when (and (integer? k)
-                (> k (table-hi t)))
+     (when (and (integer? k) (> k (table-hi t)))
        (set-table-hi! t k))
      (hash-set! (table-ht t) k v)]))
 
