@@ -266,8 +266,10 @@
              stmt ...)))))]
 
   [((LetFunction loc name params block stmts))
-   (with-syntax ([name (compile-expr name)]
-                 [func-expr (compile-expr (Func loc params block))]
+   (define compiled-name (compile-expr name))
+   (with-syntax ([name compiled-name]
+                 [func-expr (parameterize ([current-procedure-name compiled-name])
+                              (compile-expr (Func loc params block)))]
                  [(stmt ...) (maybe-void (map compile-statement stmts))])
      (syntax/loc* loc
        (#%letrec ([name func-expr])
