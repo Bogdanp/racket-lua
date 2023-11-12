@@ -12,6 +12,7 @@
 (provide
  table?
  make-table
+ in-table
  table-ht
  table-length
  table-meta-ref
@@ -22,7 +23,6 @@
  table-keys
  table-values
  table-sort!
- table->list
 
  lua:getmetatable
  lua:setmetatable)
@@ -176,6 +176,25 @@
         [v (in-list sorted-values)])
     (hash-set! (table-ht t) i v)))
 
-(define (table->list t)
-  (for/list ([i (in-range 1 (add1 (table-length t)))])
-    (table-ref t i)))
+(define (in-table t)
+  (make-do-sequence
+   (lambda ()
+     (define ht (table-ht t))
+     (define len (table-length t))
+     (values
+      ; pos->element
+      (lambda (pos)
+        (hash-ref ht pos nil))
+      ; early-next-pos
+      #f
+      ; next-pos
+      add1
+      ; initial-pos
+      1
+      ; continue-with-pos?
+      (lambda (pos)
+        (<= pos len))
+      ; continue-with-val?
+      #f
+      ; continue-after-pos+val?
+      #f))))

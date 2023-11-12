@@ -165,6 +165,11 @@ Individual @tt{local} declarations at the top level have no effect.
   ]
 }
 
+@defproc[(in-table [t table?]) sequence?]{
+  Converts @racket[t] to a sequence, returning values up to one of its
+  borders.
+}
+
 @defproc[(table-ref [t table?]
                     [k lua-value/c]
                     [default-proc (-> lua-value/c) _default]) lua-value/c]{
