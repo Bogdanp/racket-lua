@@ -40,23 +40,20 @@
        (raise-lua-error #f (format "table ~a is not callable" (lua:tostring self)))])))
 
 (define (make-table . args)
-  (define ht
-    (let ([ht (make-hash)])
-      (begin0 ht
-        (for/fold ([index 1])
-                  ([arg (in-list args)])
-          (match arg
-            [(? nil?)
-             (add1 index)]
-            [(cons k v)
-             #:when (not (pair? v))
-             (unless (nil? v)
-               (hash-set! ht k v))
-             index]
-            [_
-             (hash-set! ht index arg)
-             (add1 index)])))))
-  (table nil ht))
+  (define t (table nil (make-hash)))
+  (begin0 t
+    (for/fold ([index 1])
+              ([arg (in-list args)])
+      (match arg
+        [(? nil?)
+         (add1 index)]
+        [(cons k (and (not (? pair?)) v))
+         (unless (nil? v)
+           (lua:rawset t k v))
+         index]
+        [_
+         (lua:rawset t index arg)
+         (add1 index)]))))
 
 (define (table-length t)
   (define ints
