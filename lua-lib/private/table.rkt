@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/lazy-require
+         racket/match
          "exn.rkt"
          "nil.rkt")
 
@@ -40,21 +41,21 @@
 
 (define (make-table . args)
   (define ht
-    (make-hash
-     (for/fold ([kvs null]
-                [index 1]
-                #:result kvs)
-               ([arg (in-list args)])
-       (cond
-         [(nil? arg)
-          (values kvs (add1 index))]
-         [(and (pair? arg)
-               (not (list? arg)))
-          (if (nil? (cdr arg))
-              (values kvs index)
-              (values (cons arg kvs) index))]
-         [else
-          (values (cons (cons index arg) kvs) (add1 index))]))))
+    (let ([ht (make-hash)])
+      (begin0 ht
+        (for/fold ([index 1])
+                  ([arg (in-list args)])
+          (match arg
+            [(? nil?)
+             (add1 index)]
+            [(cons k v)
+             #:when (not (pair? v))
+             (unless (nil? v)
+               (hash-set! ht k v))
+             index]
+            [_
+             (hash-set! ht index arg)
+             (add1 index)])))))
   (table nil ht))
 
 (define (table-length t)
