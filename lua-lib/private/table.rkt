@@ -67,9 +67,9 @@
     (nil~>
      (lua:getmetatable t)
      (table-ref k)))
-  (cond
-    [(nil? res) (default-proc)]
-    [else res]))
+  (if (nil? res)
+      (default-proc)
+      res))
 
 (define (table-ref t k [default-proc
                          (lambda ()
@@ -81,7 +81,11 @@
                              [else nil]))])
   (cond
     [(table? t)
-     (hash-ref (table-ht t) k default-proc)]
+     (define res
+       (lua:rawget t k))
+     (if (nil? res)
+         (default-proc)
+         res)]
     [(nil? t)
      (raise-lua-error #f (format "attempt to index nil~n  index: ~a" (lua:tostring k)))]
     [(number? t)
@@ -102,26 +106,21 @@
   (define dunder-value
     (table-meta-ref t #"__newindex"))
   (cond
-    [(nil? k)
-     (raise-lua-error #f "table index is nil")]
     [(table? dunder-value)
      (table-set! dunder-value k v)]
     [(procedure? dunder-value)
      (dunder-value t k v)]
+    [else
+     (lua:rawset t k v)]))
+
+(define (lua:rawset t k v)
+  (cond
+    [(nil? k)
+     (raise-lua-error #f "table index is nil")]
     [(nil? v)
      (hash-remove! (table-ht t) k)]
     [else
      (hash-set! (table-ht t) k v)]))
-
-(define (lua:rawset t k v)
-  (begin0 t
-    (cond
-      [(nil? k)
-       (raise-lua-error #f "table index is nil")]
-      [(nil? v)
-       (hash-remove! (table-ht t) k)]
-      [else
-       (hash-set! (table-ht t) k v)])))
 
 (define (table-keys t)
   (hash-keys (table-ht t)))
