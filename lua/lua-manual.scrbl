@@ -150,6 +150,17 @@ Individual @tt{local} declarations at the top level have no effect.
   The nil value and the predicate that identifies it.
 }
 
+@defproc[(~#lua [v lua-value/c]) bytes?]{
+  Returns the result of calling the lua @tt{tostring} procedure on
+  @racket[v].
+}
+
+@defproc[(~lua [v lua-value/c]) string?]{
+  Like @racket[~#lua] but converts the result to a string, decoding
+  the bytes as UTF-8 and replacing any invalid sequences with
+  @racket[#\uFFFD].
+}
+
 @defproc[(table? [v any/c]) boolean?]{
   Returns @racket[#t] when @racket[v] is a table.
 }

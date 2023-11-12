@@ -2,7 +2,8 @@
 
 (require racket/contract
          "private/nil.rkt"
-         "private/table.rkt")
+         "private/table.rkt"
+         "private/string.rkt")
 
 (provide
  lua-value/c
@@ -17,7 +18,12 @@
   [table-length (-> table? exact-nonnegative-integer?)]
   [rename lua:getmetatable table-metatable (-> table? (or/c nil? table?))]
   [rename lua:setmetatable set-table-metatable! (-> table? table? table?)]
-  [table-sort! (->* (table?) ((-> any/c any/c boolean?)) void?)]))
+  [table-sort! (->* (table?) ((-> any/c any/c boolean?)) void?)]
+  [rename lua:tostring ~#lua (-> lua-value/c bytes?)]
+  [~lua (-> lua-value/c string?)]))
 
 (define lua-value/c
   (or/c boolean? bytes? number? nil? procedure? table?))
+
+(define (~lua v)
+  (bytes->string/utf-8 (lua:tostring v) #\uFFFD))
