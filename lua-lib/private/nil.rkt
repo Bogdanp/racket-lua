@@ -4,8 +4,7 @@
                      syntax/parse)
          racket/lazy-require
          racket/port
-         racket/string
-         "mark.rkt")
+         "exn.rkt")
 
 (lazy-require
  ["string.rkt" (lua:tostring)])
@@ -26,22 +25,18 @@
          (display "nil" out))]
       #:property prop:procedure
       (lambda (_ . args)
-        (define args-str
-          (string-join
-           (for/list ([arg (in-list args)])
-             (bytes->string/utf-8 (lua:tostring arg) #\uFFFD))
-           ", "))
-        (define stack-str
-          (~call-stack))
-        (define indented-stack-str
-          (and stack-str
-               (call-with-output-string
-                (lambda (out)
-                  (for ([line (in-lines (open-input-string stack-str))])
-                    (fprintf out "   ~a~n" line))))))
-        (if stack-str
-            (error (format "attempt to call a nil value~n  call stack:~a  call args: ~a" indented-stack-str args-str))
-            (error (format "attempt to call a nil value~n  call args: ~a" args-str)))))
+        (cond
+          [(null? args)
+           (raise-lua-error #f "attempt to call a nil value")]
+          [else
+           (define args-str
+             (call-with-output-string
+              (lambda (out)
+                (for ([arg (in-list args)])
+                  (define arg-str
+                    (bytes->string/utf-8 (lua:tostring arg) #\uFFFD))
+                  (fprintf out "~n   ~a" arg-str)))))
+           (raise-lua-error #f (format "attempt to call a nil value~n  call args: ~a" args-str))])))
     (nil)))
 (define (nil? v)
   (eq? v nil))

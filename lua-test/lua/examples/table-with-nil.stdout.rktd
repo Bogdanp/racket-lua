@@ -1,1 +1,1 @@
-"false\ttable index is nil\n"
+"false\ttable index is nil\n  call stack:\n   ...able-with-nil.lua:3:12: function\n"

@@ -29,3 +29,5 @@ function loop()
 end
 
 print(pcall(function() loop() end))
+
+print(pcall(function() t:d() end))
