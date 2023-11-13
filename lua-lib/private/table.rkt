@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require racket/lazy-require
+(require (for-syntax racket/base
+                     syntax/parse)
+         racket/lazy-require
          racket/match
          "exn.rkt"
          "nil.rkt")
@@ -178,25 +180,31 @@
         [v (in-list vs)])
     (hash-set! (table-ht t) i v)))
 
-(define (in-table t)
-  (make-do-sequence
-   (lambda ()
-     (define ht (table-ht t))
-     (define len (table-length t))
-     (values
-      ; pos->element
-      (lambda (pos)
-        (hash-ref ht pos nil))
-      ; early-next-pos
-      #f
-      ; next-pos
-      add1
-      ; initial-pos
-      1
-      ; continue-with-pos?
-      (lambda (pos)
-        (<= pos len))
-      ; continue-with-val?
-      #f
-      ; continue-after-pos+val?
-      #f))))
+
+;; sequence ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sequence-syntax in-table
+  (lambda () #'in-table*)
+  (lambda (stx)
+    (syntax-parse stx
+      [[(v) (_ table)]
+       #'[(v)
+          (:do-in
+           ([(t) table])
+           (check-table t)
+           ([i 1]
+            [n (table-length t)])
+           (<= i n)
+           ([(j) (add1 i)]
+            [(v) (table-ref t i)])
+           #t
+           #t
+           [j n])]]
+      [_ #f])))
+
+(define (in-table* t)
+  (for/list ([v (in-table t)]) v))
+
+(define (check-table t)
+  (unless (table? t)
+    (raise-argument-error 'in-table "table?" t)))

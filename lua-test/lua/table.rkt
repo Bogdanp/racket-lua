@@ -11,6 +11,18 @@
    "table"
 
    (test-suite
+    "in-table"
+
+    (check-equal? (for/list ([v (in-table (make-table))]) v) null)
+    (check-equal?
+     (for/list ([v (in-table (make-table 1 2 3))]) v)
+     '(1 2 3))
+    (check-equal?
+     (for/list ([v (in-table (make-table nil 1 nil 2 nil nil 3))])
+       v)
+     (list nil 1 nil 2 nil nil 3)))
+
+   (test-suite
     "table-length"
 
     (test-case "sequences"
