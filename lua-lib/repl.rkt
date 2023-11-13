@@ -41,10 +41,13 @@
   (require (submod "lang/compiler.rkt" private)
            "lang/lexer.rkt"
            "lang/parser.rkt"
+           "lang/runtime-config.rkt"
            "private/string.rkt"
            racket/port
            racket/pretty
            syntax/strip-context)
+
+  (configure-runtime)
 
   ;; Avoid depending on readline-lib.
   (define readline-prompt
