@@ -4,6 +4,7 @@
                      syntax/parse)
          racket/lazy-require
          racket/match
+         racket/struct
          "exn.rkt"
          "nil.rkt")
 
@@ -32,6 +33,16 @@
 ;; hi: The largest inserted integer index. Serves as the upper bound
 ;; for finding borders in sequences.
 (struct table ([meta #:mutable] [hi #:mutable] ht)
+  #:methods gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (lambda (_) 'make-table)
+      (lambda (t) (append
+                   (for/list ([v (in-table t)]) v)
+                   (for/list ([(k v) (in-hash (table-ht t))]
+                              #:unless (and (integer? k)
+                                            (positive? k)))
+                     (cons k v))))))]
   #:property prop:procedure
   (lambda (self . args)
     (define dunder-call
