@@ -32,7 +32,6 @@
 ;; hi: The largest inserted integer index. Serves as the upper bound
 ;; for finding borders in sequences.
 (struct table ([meta #:mutable] [hi #:mutable] ht)
-  #:transparent
   #:property prop:procedure
   (lambda (self . args)
     (define dunder-call
