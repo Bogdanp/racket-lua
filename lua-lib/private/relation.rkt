@@ -4,6 +4,7 @@
                      syntax/parse)
          "adjust.rkt"
          "error.rkt"
+         "nil.rkt"
          "string.rkt"
          "table.rkt")
 
@@ -21,8 +22,8 @@
            (let ([lhs-eq (table-meta-ref a #"__eq")]
                  [rhs-eq (table-meta-ref a #"__eq")])
              (cond
-               [(procedure? lhs-eq) (and (lhs-eq a b) #t)]
-               [(procedure? rhs-eq) (and (rhs-eq b a) #t)]
+               [(procedure?* lhs-eq) (and (lhs-eq a b) #t)]
+               [(procedure?* rhs-eq) (and (rhs-eq b a) #t)]
                [else #f])))))
 
 (define (lua:~= a b)
@@ -36,9 +37,9 @@
      (define lhs-dunder-proc (and (table? a) (table-meta-ref a dunder-name)))
      (define rhs-dunder-proc (and (table? b) (table-meta-ref b dunder-name)))
      (cond
-       [(procedure? lhs-dunder-proc)
+       [(procedure?* lhs-dunder-proc)
         (lua:adjust* (λ () (lhs-dunder-proc a b)))]
-       [(procedure? rhs-dunder-proc)
+       [(procedure?* rhs-dunder-proc)
         (lua:adjust* (λ () (rhs-dunder-proc b a)))]
        [else
         (lua:error (format "~a: expected two numbers or two strings, received ~a and ~a"

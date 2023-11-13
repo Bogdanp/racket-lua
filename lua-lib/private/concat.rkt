@@ -2,6 +2,7 @@
 
 (require "adjust.rkt"
          "error.rkt"
+         "nil.rkt"
          "string.rkt"
          "table.rkt")
 
@@ -25,9 +26,9 @@
      (define lhs-dunder-proc (and (table? a) (table-meta-ref a #"__concat")))
      (define rhs-dunder-proc (and (table? b) (table-meta-ref b #"__concat")))
      (cond
-       [(procedure? lhs-dunder-proc)
+       [(procedure?* lhs-dunder-proc)
         (lua:adjust* (λ () (lhs-dunder-proc a b)))]
-       [(procedure? rhs-dunder-proc)
+       [(procedure?* rhs-dunder-proc)
         (lua:adjust* (λ () (rhs-dunder-proc b a)))]
        [else
         (lua:error (format "..: cannot concatenate ~a and ~a"

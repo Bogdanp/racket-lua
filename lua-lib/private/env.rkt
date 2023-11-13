@@ -6,6 +6,7 @@
          "iter.rkt"
          "json.rkt"
          "length.rkt"
+         "nil.rkt"
          "number.rkt"
          "relation.rkt"
          "string.rkt"
@@ -130,7 +131,7 @@
                    [current-standard-library-modules null]
                    [current-global-environment env])
       (cond
-        [(procedure? path-or-proc)
+        [(procedure?* path-or-proc)
          (path-or-proc env name)]
         [else
          (define chunk (dynamic-require path-or-proc '#%chunk))

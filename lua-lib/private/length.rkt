@@ -2,6 +2,7 @@
 
 (require "adjust.rkt"
          "error.rkt"
+         "nil.rkt"
          "string.rkt"
          "table.rkt")
 
@@ -18,7 +19,7 @@
     [(table? v)
      (define __len
        (table-meta-ref v #"__len"))
-     (if (procedure? __len)
+     (if (procedure?* __len)
          (lua:adjust* (λ () (__len v)))
          (table-length v))]
     [else

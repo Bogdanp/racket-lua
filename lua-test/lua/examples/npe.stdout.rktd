@@ -1,1 +1,1 @@
-"false\tapplication: attempt to call a nil value\n"
+"false\tattempt to call a nil value\n  call stack:   \n   examples/npe.lua:3:12:function\n  call args: 1, 2, 3\nfalse\tattempt to call a nil value\n  call stack:   \n   examples/npe.lua:18:12:function\n   examples/npe.lua:10:0:a\n   examples/npe.lua:14:0:b\n   examples/npe.lua:6:0:t.c\n  call args: 42\nfalse\tattempt to call a nil value\n  call stack:   \n   examples/npe.lua:31:12:function\n   examples/npe.lua:20:0:loop\n   examples/npe.lua:21:4:go\n     [repeats 1001 times]\n   examples/npe.lua:6:0:t.c\n  call args: 42\n"

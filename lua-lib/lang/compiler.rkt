@@ -367,6 +367,7 @@
   [((Func loc (list params ... '...) block))
    (define return? (needs-return? block))
    (with-syntax ([procedure-name (current-procedure-name)]
+                 [source loc]
                  [(param ...) (map compile-expr params)]
                  [block (compile-block block)])
      (with-syntax ([body (if return?
@@ -375,12 +376,14 @@
        (syntax/loc* loc
          (#%procedure-rename
           (#%lambda ([param nil] ... . #%rest)
-            body)
+            (#%with-mark #%function-mark (#%cons source (#%quote procedure-name))
+              body))
           procedure-name))))]
 
   [((Func loc params block))
    (define return? (needs-return? block))
    (with-syntax ([procedure-name (current-procedure-name)]
+                 [source loc]
                  [(param ...) (map compile-expr params)]
                  [block (compile-block block)])
      (with-syntax ([body (if return?
@@ -389,7 +392,8 @@
        (syntax/loc* loc
          (#%procedure-rename
           (#%lambda ([param nil] ... . #%unused-rest)
-            body)
+            (#%with-mark #%function-mark (#%cons source (#%quote procedure-name))
+              body))
           procedure-name))))]
 
   [((Name loc symbol))
@@ -576,7 +580,7 @@
 ;; procedure names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define current-procedure-name
-  (make-parameter 'anon))
+  (make-parameter 'function))
 
 (define (names->procedure-name names)
   (string->symbol

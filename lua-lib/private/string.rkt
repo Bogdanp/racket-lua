@@ -59,7 +59,7 @@
           (->string name v)]
          [else
           (dunder-proc v)])]
-      [(procedure? v)
+      [(procedure?* v)
        (->string "function" v)]
       [else
        (~a v)]))

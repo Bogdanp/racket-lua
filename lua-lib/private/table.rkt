@@ -48,7 +48,7 @@
     (define dunder-call
       (table-meta-ref self #"__call"))
     (cond
-      [(procedure? dunder-call)
+      [(procedure?* dunder-call)
        (apply dunder-call self args)]
       [else
        (raise-lua-error #f (format "table ~a is not callable" (lua:tostring self)))])))
@@ -105,7 +105,7 @@
                              (table-meta-ref t #"__index"))
                            (cond
                              [(table? index) (table-ref index k)]
-                             [(procedure? index) (index t k)]
+                             [(procedure?* index) (index t k)]
                              [else nil]))])
   (cond
     [(table? t)
@@ -128,7 +128,7 @@
 (define (lua:rawget t k)
   (unless (table? t)
     (raise-lua-error #f (format "rawget: not a table: ~a" (lua:tostring k))))
-  (hash-ref (table-ht t) k nil))
+  (hash-ref (table-ht t) k (λ () nil)))
 
 (define (table-set! t k v)
   (define dunder-value
@@ -136,7 +136,7 @@
   (cond
     [(table? dunder-value)
      (table-set! dunder-value k v)]
-    [(procedure? dunder-value)
+    [(procedure?* dunder-value)
      (dunder-value t k v)]
     [else
      (lua:rawset t k v)]))

@@ -10,6 +10,7 @@
          "private/error.rkt"
          "private/length.rkt"
          "private/logic.rkt"
+         "private/mark.rkt"
          "private/nil.rkt"
          "private/relation.rkt"
          "private/table.rkt")
@@ -32,14 +33,17 @@
   [letrec #%letrec]
   [let/cc #%let/cc]
   [provide #%provide]
+  [quote #%quote]
   [time #%time]
   [truthy? #%truthy?]
   [values #%values]
-  [void #%void])
+  [void #%void]
+  [with-continuation-mark #%with-mark])
 
  nil
  (rename-out
   [current-global-environment #%global]
+  [function-mark #%function-mark]
   [load-standard-library! #%load-stdlib!]
   [lua:% %]
   [lua:& &]

@@ -13,5 +13,5 @@
     [(bytes? v) #"string"]
     [(number? v) #"number"]
     [(boolean? v) #"boolean"]
-    [(procedure? v) #"procedure"]
+    [(procedure?* v) #"procedure"]
     [else (raise-argument-error 'lua:type "unexpected value" v)]))

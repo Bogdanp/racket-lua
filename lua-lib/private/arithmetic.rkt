@@ -4,6 +4,7 @@
                      syntax/parse)
          "adjust.rkt"
          "error.rkt"
+         "nil.rkt"
          "string.rkt"
          "table.rkt")
 
@@ -21,7 +22,7 @@
      (define dunder-proc
        (and (table? v)
             (table-meta-ref v #"__unm")))
-     (if (procedure? dunder-proc)
+     (if (procedure?* dunder-proc)
          (lua:adjust* (λ () (dunder-proc v)))
          (lua:error (format "-: expected a number, received ~a" (lua:tostring v))))]))
 
@@ -29,9 +30,9 @@
   (define lhs-dunder-proc (table-meta-ref a dunder-name))
   (define rhs-dunder-proc (table-meta-ref b dunder-name))
   (cond
-    [(procedure? lhs-dunder-proc)
+    [(procedure?* lhs-dunder-proc)
      (lua:adjust* (λ () (lhs-dunder-proc a b)))]
-    [(procedure? rhs-dunder-proc)
+    [(procedure?* rhs-dunder-proc)
      (lua:adjust* (λ () (rhs-dunder-proc b a)))]
     [else
      (lua:error (format "~a: expected two numbers, received ~a and ~a"
@@ -103,7 +104,7 @@
      (define dunder-proc
        (and (table? v)
             (table-meta-ref v #"__bnot")))
-     (if (procedure? dunder-proc)
+     (if (procedure?* dunder-proc)
          (lua:adjust* (λ () (dunder-proc v)))
          (lua:error (format "~~: expected an integer, received ~a" (lua:tostring v))))]))
 
@@ -111,9 +112,9 @@
   (define lhs-dunder-proc (table-meta-ref a dunder-name))
   (define rhs-dunder-proc (table-meta-ref b dunder-name))
   (cond
-    [(procedure? lhs-dunder-proc)
+    [(procedure?* lhs-dunder-proc)
      (lua:adjust* (λ () (lhs-dunder-proc a b)))]
-    [(procedure? rhs-dunder-proc)
+    [(procedure?* rhs-dunder-proc)
      (lua:adjust* (λ () (rhs-dunder-proc b a)))]
     [else
      (lua:error (format "~a: expected two integers, received ~a and ~a"
