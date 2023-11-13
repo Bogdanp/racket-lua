@@ -19,7 +19,7 @@
   [rename lua:getmetatable table-metatable (-> table? (or/c nil? table?))]
   [rename lua:setmetatable set-table-metatable! (-> table? table? table?)]
   [table-sort! (->* (table?) ((-> any/c any/c boolean?)) void?)]
-  [rename lua:tostring ~#lua (-> lua-value/c bytes?)]
+  [rename lua:tostring ~lua-bytes (-> lua-value/c bytes?)]
   [~lua (-> lua-value/c string?)]))
 
 (define lua-value/c
