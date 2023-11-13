@@ -28,12 +28,14 @@
     (test-case "sequences with gaps"
       (check-property
        (property ([groups (gen:integer-in 0 16)]
-                  [instrs (apply gen:tuple (for/list ([n (in-range groups)])
-                                             (define gen:len (gen:integer-in n (add1 (* n 1000))))
-                                             (gen:frequency
-                                              `((3 . ,(gen:let ([m gen:len]) `(gap ,m)))
-                                                (2 . ,(gen:let ([m gen:len]) `(rem ,m)))
-                                                (7 . ,gen:len)))))])
+                  [instrs (apply
+                           gen:tuple
+                           (for/list ([n (in-range groups)])
+                             (define gen:len (gen:integer-in n (add1 (* n 1000))))
+                             (gen:frequency
+                              `((3 . ,(gen:let ([m gen:len]) `(gap ,m)))
+                                (2 . ,(gen:let ([m gen:len]) `(rem ,m)))
+                                (7 . ,gen:len)))))])
          (define t (make-table))
          (define last-idx
            (for/fold ([idx 1])
