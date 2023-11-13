@@ -22,7 +22,7 @@
 (define (debug src stmts)
   (when (getenv "RACKET_LUA_DEBUG")
     (printf "<<~a>>~n" src)
-    ((dynamic-require 'racket/pretty 'pretty-print)
+    ((dynamic-require 'racket/pretty 'pretty-write)
      (syntax->datum stmts))))
 
 (define (reraise-lexer-error e)
