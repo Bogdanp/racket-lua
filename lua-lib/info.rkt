@@ -2,7 +2,7 @@
 
 (define license 'BSD-3-Clause)
 (define collection "lua")
-(define version "0.4")
+(define version "0.4.1")
 (define deps '("base"
                "iso-printf-lib"
                "sandbox-lib"))

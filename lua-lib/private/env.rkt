@@ -23,6 +23,7 @@
   (make-parameter #f))
 
 (define-runtime-module-path-index racket/base 'racket/base)
+(define-runtime-module-path-index racket/date 'racket/date)
 (define-runtime-module-path-index racket/file 'racket/file)
 (define-runtime-module-path-index racket/port 'racket/port)
 
@@ -32,6 +33,7 @@
   (dynamic-require
    (case mod
      [(#"racket/base") racket/base]
+     [(#"racket/date") racket/date]
      [(#"racket/file") racket/file]
      [(#"racket/port") racket/port]
      [else (string->symbol (bytes->string/utf-8 mod))])

@@ -9,6 +9,7 @@ local path_to_bytes = racket["path->bytes"]
 local bytes_to_string = racket["bytes->string/utf-8"]
 local current_seconds = racket["current-seconds"]
 local current_process_millis = racket["current-process-milliseconds"]
+local find_seconds = racket.lib("racket/date", "find-seconds")
 
 local os = {}
 
@@ -52,7 +53,22 @@ end
 
 function os.time(t)
     if t ~= nil then
-        error("os.time: table argument not implemented")
+        if t.isdst ~= nil then
+            error"os.time: the isdst field is not supported"
+        end
+        for k, v in pairs(t) do
+            if v < 0 then
+                error"os.time: negative fields are not supported"
+            end
+        end
+        return find_seconds(
+            t.sec or 0,
+            t.min or 0,
+            t.hour or 12,
+            t.day or 1,
+            t.month or 1,
+            t.year or 1970
+        )
     end
     return current_seconds()
 end
