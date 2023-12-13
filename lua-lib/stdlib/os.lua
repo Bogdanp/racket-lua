@@ -57,9 +57,13 @@ function os.time(t)
             error"os.time: the isdst field is not supported"
         end
         for k, v in pairs(t) do
-            if v < 0 then
+            if k ~= "utc" and v < 0 then
                 error"os.time: negative fields are not supported"
             end
+        end
+        local localtime = true
+        if t.utc ~= nil and t.utc then
+            localtime = false
         end
         return find_seconds(
             t.sec or 0,
@@ -67,7 +71,8 @@ function os.time(t)
             t.hour or 12,
             t.day or 1,
             t.month or 1,
-            t.year or 1970
+            t.year or 1970,
+            localtime
         )
     end
     return current_seconds()
