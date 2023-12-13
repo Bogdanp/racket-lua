@@ -2,6 +2,7 @@
 
 (require lua/private/env
          lua/private/string
+         racket/date
          racket/path
          racket/port
          racket/runtime-path
@@ -29,7 +30,8 @@
              (parameterize ([current-global-environment (make-initial-environment)]
                             [current-print-ids? #f]
                             [current-error-port out]
-                            [current-output-port out])
+                            [current-output-port out]
+                            [date-display-format 'iso-8601])
                (dynamic-require `(submod (file ,(path->string path)) configure-runtime) #f void)
                (dynamic-require `(file ,(path->string path)) #f))))))
       (with-handlers ([exn:fail:filesystem?
