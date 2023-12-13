@@ -7,6 +7,7 @@ local make_tmpfile = racket.lib("racket/file", "make-temporary-file")
 local bytes_to_path = racket["bytes->path"]
 local path_to_bytes = racket["path->bytes"]
 local bytes_to_string = racket["bytes->string/utf-8"]
+local string_to_bytes = racket["string->bytes/utf-8"]
 local current_seconds = racket["current-seconds"]
 local current_process_millis = racket["current-process-milliseconds"]
 local find_seconds = racket.lib("racket/date", "find-seconds")
@@ -49,7 +50,7 @@ function os.date(format, time)
             isdst = date_is_dst(date)
         }
     elseif format == "" or not format then
-        return date_to_string(date, true)
+        return string_to_bytes(date_to_string(date, true))
     else
         error"os.date: '[!]' and '[!]*t' are the only formats currently supported"
     end
