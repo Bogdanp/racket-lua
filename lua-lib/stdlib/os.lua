@@ -35,7 +35,7 @@ function os.date(format, time)
         format = format:sub(2)
     end
     time = time or os.time()
-    local date = seconds_to_date(time, isutc)
+    local date = seconds_to_date(time, not isutc)
     if format == "*t" then
         return {
             year  = date_year(date),
