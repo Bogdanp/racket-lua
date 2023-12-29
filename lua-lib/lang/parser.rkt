@@ -1,10 +1,10 @@
 #lang racket/base
 
 (require (for-syntax racket/base
-                     syntax/parse)
+                     syntax/parse/pre)
          racket/match
          racket/path
-         syntax/parse
+         syntax/parse/pre
          syntax/readerr
          "ast.rkt"
          "lexer.rkt")

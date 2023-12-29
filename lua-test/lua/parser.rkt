@@ -2,7 +2,7 @@
 
 (require (for-syntax racket/base
                      racket/syntax-srcloc
-                     syntax/parse)
+                     syntax/parse/pre)
          lua/lang/ast
          lua/lang/lexer
          lua/lang/parser

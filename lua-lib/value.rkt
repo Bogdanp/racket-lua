@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract
+(require racket/contract/base
          "private/nil.rkt"
          "private/table.rkt"
          "private/string.rkt")

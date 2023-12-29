@@ -2,7 +2,7 @@
 
 (require (for-syntax racket/base
                      racket/syntax
-                     syntax/parse))
+                     syntax/parse/pre))
 
 (provide
  (struct-out Node))

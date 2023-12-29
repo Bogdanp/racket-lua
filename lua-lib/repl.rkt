@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (for-syntax racket/base
-                     syntax/parse)
+                     syntax/parse/pre)
          (prefix-in racket: racket/base)
          "base.rkt"
          (prefix-in lua: "private/table.rkt"))

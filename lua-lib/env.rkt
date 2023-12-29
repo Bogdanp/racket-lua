@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract
+(require racket/contract/base
          "private/env.rkt"
          "private/table.rkt")
 
