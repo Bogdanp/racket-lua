@@ -21,7 +21,7 @@
 
 (define (debug src stmts)
   (when (getenv "RACKET_LUA_DEBUG")
-    (printf "<<~a>>~n" src)
+    (printf ";; <<~a>>~n" src)
     ((dynamic-require 'racket/pretty 'pretty-write)
      (syntax->datum stmts))))
 
