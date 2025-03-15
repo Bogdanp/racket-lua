@@ -10,10 +10,9 @@
   (define indent-str
     (make-string indent #\space))
   (define stack
-    (reverse
-     (continuation-mark-set->list
-      (current-continuation-marks)
-      function-mark)))
+    (continuation-mark-set->list
+     (current-continuation-marks)
+     function-mark))
   (and (not (null? stack))
        (call-with-output-string
         (lambda (out)
