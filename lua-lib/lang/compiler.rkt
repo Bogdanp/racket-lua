@@ -545,7 +545,7 @@
 (define (maybe-void stmts)
   (if (null? stmts) '((#%void)) stmts))
 
-(define ((make-statement-walker base-proc [enter-loops? #t]) e)
+(define ((make-statement-finder base-proc [enter-loops? #t]) e)
   (let loop ([e e])
     (match e
       [(Block _ stmts)
@@ -572,9 +572,9 @@
        (base-proc e)])))
 
 (define needs-break?
-  (make-statement-walker Break? #f))
+  (make-statement-finder Break? #f))
 (define needs-return?
-  (make-statement-walker Return?))
+  (make-statement-finder Return?))
 
 
 ;; procedure names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
