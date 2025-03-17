@@ -5,6 +5,7 @@
          racket/format
          racket/list
          racket/match
+         racket/stream
          racket/string
          racket/syntax
          "ast.rkt")
@@ -545,31 +546,29 @@
 (define (maybe-void stmts)
   (if (null? stmts) '((#%void)) stmts))
 
-(define ((make-statement-finder base-proc [enter-loops? #t]) e)
-  (let loop ([e e])
-    (match e
-      [(Block _ stmts)
-       (ormap loop stmts)]
-      [(Do _ block)
-       (loop block)]
-      [(For _ _ _ _ _ block)
-       #:when enter-loops?
-       (loop block)]
-      [(If _ _ then-block #f)
-       (loop then-block)]
-      [(If _ _ then-block else-block)
-       (or (loop then-block)
-           (loop else-block))]
-      [(Let _ _ _ stmts)
-       (ormap loop stmts)]
-      [(Repeat _ _ block)
-       #:when enter-loops?
-       (loop block)]
-      [(While _ _ block)
-       #:when enter-loops?
-       (loop block)]
-      [_
-       (base-proc e)])))
+(define (in-statements e [enter-loops? #t])
+  (match e
+    [(or (Block _ stmts)
+         (Let _ _ _ stmts))
+     (apply stream-append (map in-statements stmts))]
+    [(Do _ block)
+     (in-statements block enter-loops?)]
+    [(or (For _ _ _ _ _ block)
+         (Repeat _ _ block)
+         (While _ _ block))
+     #:when enter-loops?
+     (in-statements block enter-loops?)]
+    [(If _ _ then-block #f)
+     (in-statements then-block enter-loops?)]
+    [(If _ _ then-block else-block)
+     (stream-append
+      (in-statements then-block enter-loops?)
+      (in-statements else-block enter-loops?))]
+    [_
+     (stream e)]))
+
+(define ((make-statement-finder found? [enter-loops? #t]) e)
+  (stream-ormap found? (in-statements e enter-loops?)))
 
 (define needs-break?
   (make-statement-finder Break? #f))
