@@ -18,12 +18,12 @@
     (values
      s
      (case (token-type t)
-       [(whitespace) 'white-space]
-       [(lparen rparen lsqbrace rsqbrace lcubrace rcubrace comma commacomma dot dotdot dotdotdot) 'parenthesis]
        [(keyword) 'keyword]
-       [(op) 'operator]
+       [(lparen rparen lsqbrace rsqbrace lcubrace rcubrace comma commacomma dot dotdot dotdotdot) 'parenthesis]
        [(name) 'symbol]
        [(number) 'constant]
+       [(op) 'operator]
+       [(whitespace) 'white-space]
        [else (token-type t)])
      (case (token-type t)
        [(lparen rparen lsqbrace rsqbrace lcubrace rcubrace) (string->symbol s)]
@@ -31,6 +31,10 @@
      (and (not (eof-object? s))    (token-pos t))
      (and (not (eof-object? s)) (+ (token-pos t) (string-length s))))))
 
+;; NOTE: These reqexp-quotes should really be pregexp-quotes, but
+;; pregexp-quote was only added in ~8.12. The quoted expressions in
+;; this case don't have any special pregexp characters, so this is
+;; fine. Just something to keep in mind if this needs to expand.
 (define indent-phrase-re
   (let ([phrases '("function" "local function" "if" "elseif" "else" "for" "while" "do" "repeat")])
     (pregexp (string-append "[[:space:]]*" "(" (string-join (map regexp-quote phrases) "|") ")"))))
