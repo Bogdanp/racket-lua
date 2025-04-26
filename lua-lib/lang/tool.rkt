@@ -20,9 +20,10 @@
      (case (token-type t)
        [(whitespace) 'white-space]
        [(lparen rparen lsqbrace rsqbrace lcubrace rcubrace comma commacomma dot dotdot dotdotdot) 'parenthesis]
-       [(op keyword) 'hash-colon-keyword]
-       [(number) 'constant]
+       [(keyword) 'keyword]
+       [(op) 'operator]
        [(name) 'symbol]
+       [(number) 'constant]
        [else (token-type t)])
      (case (token-type t)
        [(lparen rparen lsqbrace rsqbrace lcubrace rcubrace) (string->symbol s)]
