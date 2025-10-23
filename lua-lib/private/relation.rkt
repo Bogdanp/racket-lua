@@ -20,7 +20,7 @@
       (and (table? a)
            (table? b)
            (let ([lhs-eq (table-meta-ref a #"__eq")]
-                 [rhs-eq (table-meta-ref a #"__eq")])
+                 [rhs-eq (table-meta-ref b #"__eq")])
              (cond
                [(procedure?* lhs-eq) (and (lhs-eq a b) #t)]
                [(procedure?* rhs-eq) (and (rhs-eq b a) #t)]

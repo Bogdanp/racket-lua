@@ -25,3 +25,5 @@ print(a == b)
 print(b == a)
 print(a == c)
 print(c == a)
+
+print({} == a)
