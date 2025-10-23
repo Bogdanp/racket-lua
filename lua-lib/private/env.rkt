@@ -98,6 +98,7 @@
 (define-runtime-module-path-index racket.lua "../stdlib/racket.lua")
 (define-runtime-module-path-index string.lua "../stdlib/string.lua")
 (define-runtime-module-path-index table.lua "../stdlib/table.lua")
+(define-runtime-module-path-index utf8.lua "../stdlib/utf8.lua")
 
 (define (load-table.lua! env name)
   (define mod (car (dynamic-require table.lua '#%chunk)))
@@ -123,7 +124,8 @@
     `(#"coroutine" . ,coroutine.lua) ;; depends on table.lua
     `(#"io"        . ,io.lua)        ;; depends on file.lua and os.lua
     `(#"math"      . ,math.lua)
-    `(#"string"    . ,load-string.lua!))))
+    `(#"string"    . ,load-string.lua!)
+    `(#"utf8"      . ,utf8.lua))))
 
 (define (load-standard-library! env)
   (for ([p (in-list (current-standard-library-modules))])
