@@ -33,7 +33,10 @@ for p, c in utf8.codes(mb) do
     print(p, c)
 end
 
-print(pcall(function() utf8.char(-1) end))
-print(pcall(function() utf8.char(0x110000) end))
-print(pcall(function() utf8.len(123) end))
-print(pcall(function() utf8.codepoint(123) end))
+print(pcall(utf8.char, -1))
+print(pcall(utf8.char, 0x110000))
+print(pcall(utf8.len, 123))
+print(pcall(utf8.codepoint, 123))
+print(pcall(utf8.codepoint, string.char(0x80)))
+print(pcall(utf8.codepoint, string.char(0xC2)))
+print(pcall(utf8.codepoint, string.char(0xC2, 0x00)))

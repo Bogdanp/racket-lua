@@ -24,23 +24,42 @@ local function boundscheck(who, n, argn, pos)
     end
 end
 
-local function decode(s, pos, who)
-    local byte1 = ref(s, pos - 1)
-
-    if byte1 <= 0x7F then
-        return byte1, 1
-    elseif byte1 >= 0xC2 and byte1 <= 0xDF then
-        local byte2 = ref(s, pos)
-        return (byte1 - 0xC0) * 0x40 + (byte2 - 0x80), 2
-    elseif byte1 >= 0xE0 and byte1 <= 0xEF then
-        local byte2 = ref(s, pos)
-        local byte3 = ref(s, pos + 1)
-        return (byte1 - 0xE0) * 0x1000 + (byte2 - 0x80) * 0x40 + (byte3 - 0x80), 3
-    elseif byte1 >= 0xF0 and byte1 <= 0xF4 then
-        local byte2 = ref(s, pos)
-        local byte3 = ref(s, pos + 1)
-        local byte4 = ref(s, pos + 2)
-        return (byte1 - 0xF0) * 0x40000 + (byte2 - 0x80) * 0x1000 + (byte3 - 0x80) * 0x40 + (byte4 - 0x80), 4
+local function decode(who, s, n, pos)
+    local function checklen(m)
+        if n < m then
+            error("utf8." .. who .. ": invalid UTF-8 sequence")
+        end
+    end
+    local function checkcont(b)
+        if b < 0 then
+            error("utf8." .. who .. ": invalid UTF-8 continuation byte")
+        end
+    end
+    checklen(pos)
+    local b = ref(s, pos - 1)
+    if b <= 0x7F then
+        return b, 1
+    elseif b >= 0xC2 and b <= 0xDF then
+        checklen(pos+1)
+        local c = ref(s, pos) - 0x80
+        checkcont(c)
+        return (b - 0xC0) * 0x40 + c, 2
+    elseif b >= 0xE0 and b <= 0xEF then
+        checklen(pos+2)
+        local c = (ref(s, pos)     - 0x80) * 0x40
+        checkcont(c)
+        local d =  ref(s, pos + 1) - 0x80
+        checkcont(d)
+        return (b - 0xE0) * 0x1000 + c + d, 3
+    elseif b >= 0xF0 and b <= 0xF4 then
+        checklen(pos+3)
+        local c = (ref(s, pos)     - 0x80) * 0x1000
+        checkcont(c)
+        local d = (ref(s, pos + 1) - 0x80) * 0x40
+        checkcont(d)
+        local e =  ref(s, pos + 2) - 0x80
+        checkcont(e)
+        return (b - 0xF0) * 0x40000 + c + d + e, 4
     else
         error("utf8." .. who .. ": invalid UTF-8 code")
     end
@@ -68,19 +87,19 @@ function utf8.char(...)
             bytes[pos] = c
             pos = pos + 1
         elseif c <= 0x7FF then
-            bytes[pos] = 0xC0 + c // 0x40
-            bytes[pos + 1] = 0x80 + c % 0x40
+            bytes[pos    ] = 0xC0 + c // 0x40
+            bytes[pos + 1] = 0x80 + c           % 0x40
             pos = pos + 2
         elseif c <= 0xFFFF then
-            bytes[pos] = 0xE0 + c // 0x1000
-            bytes[pos + 1] = 0x80 + c // 0x40 % 0x40
-            bytes[pos + 2] = 0x80 + c % 0x40
+            bytes[pos    ] = 0xE0 + c // 0x1000
+            bytes[pos + 1] = 0x80 + c // 0x40   % 0x40
+            bytes[pos + 2] = 0x80 + c           % 0x40
             pos = pos + 3
         else
-            bytes[pos] = 0xF0 + c // 0x40000
-            bytes[pos + 1] = 0x80 + c // 0x1000 % 0x40
-            bytes[pos + 2] = 0x80 + c // 0x40 % 0x40
-            bytes[pos + 3] = 0x80 + c % 0x40
+            bytes[pos    ] = 0xF0 + c // 0x40000
+            bytes[pos + 1] = 0x80 + c // 0x1000  % 0x40
+            bytes[pos + 2] = 0x80 + c // 0x40    % 0x40
+            bytes[pos + 3] = 0x80 + c            % 0x40
             pos = pos + 4
         end
     end
@@ -97,7 +116,7 @@ function utf8.codes(s)
             return nil
         end
 
-        local codepoint, nbytes = decode(s, pos, "codes")
+        local codepoint, nbytes = decode("codes", s, n, pos)
         nlast = nbytes
         return pos, codepoint
     end
@@ -117,7 +136,7 @@ function utf8.codepoint(s, i, j)
     local results = {}
     local pos = i
     while pos <= j and pos <= n do
-        local codepoint, nbytes = decode(s, pos, "codepoint")
+        local codepoint, nbytes = decode("codepoint", s, n, pos)
         table.insert(results, codepoint)
         pos = pos + nbytes
     end
@@ -137,7 +156,7 @@ function utf8.len(s, i, j)
     local count = 0
     local pos = i
     while pos <= j and pos <= n do
-        local ok, _, nbytes = pcall(decode, s, pos, "len")
+        local ok, _, nbytes = pcall(decode, "len", s, n, pos)
         if not ok then
             return nil, pos
         end
