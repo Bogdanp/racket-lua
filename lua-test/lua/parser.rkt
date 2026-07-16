@@ -79,6 +79,10 @@
     "expression"
 
     (test-suite
+     "number"
+     (check-parse "print(1.)" (Block ((Call (Name print) (1.0))))))
+
+    (test-suite
      "unary ops"
 
      (check-parse "print(not true)" (Block ((Call (Name print) ((Unop (Name not) #t))))))
@@ -220,6 +224,17 @@ EOF
        ((Call
          (Name print)
          ((Func () (Block ((Return (42))))))))))
+
+     (check-parse
+      #<<EOF
+print(function()
+  return
+end)
+EOF
+      (Block
+       ((Call
+         (Name print)
+         ((Func () (Block ((Return ())))))))))
 
      (check-parse
       #<<EOF
