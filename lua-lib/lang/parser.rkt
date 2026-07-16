@@ -88,7 +88,7 @@
        (Block loc (reverse stmts))]
       [(keyword 'return)
        (define return-loc (token-loc (expect l 'keyword 'return)))
-       (define return (Return return-loc (parse-exprs l)))
+       (define return (Return return-loc (parse-exprs* l)))
        (maybe-skip l 'semicolon)
        (Block loc (reverse (cons return stmts)))]
       [(semicolon)
@@ -290,6 +290,19 @@
     [(name _) (parse-name l)]
     [(lparen) (parse-expr l)]
     [tok (expected "prefixexp" tok)]))
+
+(define (parse-exprs* l)
+  (let/ec return
+    (let loop ([exprs null])
+      (define expr
+        (with-handlers ([exn:fail:read? (λ (e) (return null))])
+          (parse-expr l)))
+      (match (lexer-peek l)
+        [(comma)
+         (skip l 'comma)
+         (loop (cons expr exprs))]
+        [_
+         (reverse (cons expr exprs))]))))
 
 (define (parse-exprs l)
   (let loop ([exprs null])
