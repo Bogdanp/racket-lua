@@ -548,7 +548,7 @@
    message+context
    (if (path? (current-source-name))
        (file-name-from-path (current-source-name))
-       (current-source-name))
+       (or (current-source-name) ""))
    (token-line t)
    (token-col t)
    (token-pos t)
