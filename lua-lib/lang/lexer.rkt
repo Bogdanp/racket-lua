@@ -217,15 +217,13 @@
   [(#\.) (number-more? #\.)]
   [(#\0) (λcase
           [(#\x #\X) (λ (c) (or (hex-digit? c) (error "expected a hex digit")))]
-          [(#\.) decimal-digit-or-exponent?]) ]
+          [(#\.) decimal-digit-or-exponent?])]
   [(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-more?])
 
 (define-λcase number-more?
   #:char-id c
   [(#\e #\E) decimal-digit-or-sign?]
-  [(#\.) (λ (next-c)
-           (or (decimal-digit-or-exponent? next-c)
-               (error "expected a digit")))]
+  [(#\.) decimal-digit-or-exponent?]
   [else (and (decimal-digit? c) number-more?)])
 
 (define-λcase decimal-digit-or-sign?

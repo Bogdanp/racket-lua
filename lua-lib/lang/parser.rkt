@@ -44,6 +44,12 @@
   [number e]
   [name e])
 
+(define-match-expander unop
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ e)
+       #'(op (and (or 'not '\# '~ '-) e))])))
+
 (define-match-expander binop
   (lambda (stx)
     (syntax-parse stx
@@ -88,7 +94,7 @@
        (Block loc (reverse stmts))]
       [(keyword 'return)
        (define return-loc (token-loc (expect l 'keyword 'return)))
-       (define return (Return return-loc (parse-exprs l)))
+       (define return (Return return-loc (parse-exprs* l)))
        (maybe-skip l 'semicolon)
        (Block loc (reverse (cons return stmts)))]
       [(semicolon)
@@ -302,6 +308,11 @@
       [_
        (reverse (cons expr exprs))])))
 
+(define (parse-exprs* l)
+  (if (peek-term l)
+      (parse-exprs l)
+      null))
+
 (define (parse-expr l [lhs-e (parse-term l)] [depth 0])
   (let step ([lhs-e lhs-e]
              [depth depth])
@@ -324,6 +335,20 @@
             (define name (Name loc (token-val tok)))
             (step (Binop loc name lhs-e rhs-e) depth)]))]
       [_ lhs-e])))
+
+(define (peek-term l)
+  (match (lexer-peek l)
+    [(or (keyword (or 'nil 'false 'function 'true))
+         (number _)
+         (string _)
+         (name _)
+         (dotdotdot)
+         (unop _)
+         (lparen)
+         (lcubrace))
+     #t]
+    [_
+     #f]))
 
 (define (parse-term l)
   (match (lexer-peek l)
@@ -348,7 +373,7 @@
      (define loc (token-loc tok))
      (begin0 (Call loc '#%va-args null)
        (skip l 'dotdotdot))]
-    [(op (and (or 'not '\# '~ '-) id))
+    [(unop id)
      (parse-unary-expr l id)]
     [(keyword 'function)
      (parse-function l)]
@@ -535,7 +560,7 @@
    message+context
    (if (path? (current-source-name))
        (file-name-from-path (current-source-name))
-       (current-source-name))
+       (or (current-source-name) ""))
    (token-line t)
    (token-col t)
    (token-pos t)
