@@ -44,6 +44,12 @@
   [number e]
   [name e])
 
+(define-match-expander unop
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ e)
+       #'(op (and (or 'not '\# '~ '-) e))])))
+
 (define-match-expander binop
   (lambda (stx)
     (syntax-parse stx
@@ -291,19 +297,6 @@
     [(lparen) (parse-expr l)]
     [tok (expected "prefixexp" tok)]))
 
-(define (parse-exprs* l)
-  (let/ec return
-    (let loop ([exprs null])
-      (define expr
-        (with-handlers ([exn:fail:read? (λ (e) (return null))])
-          (parse-expr l)))
-      (match (lexer-peek l)
-        [(comma)
-         (skip l 'comma)
-         (loop (cons expr exprs))]
-        [_
-         (reverse (cons expr exprs))]))))
-
 (define (parse-exprs l)
   (let loop ([exprs null])
     (define expr
@@ -314,6 +307,11 @@
        (loop (cons expr exprs))]
       [_
        (reverse (cons expr exprs))])))
+
+(define (parse-exprs* l)
+  (if (peek-term l)
+      (parse-exprs l)
+      null))
 
 (define (parse-expr l [lhs-e (parse-term l)] [depth 0])
   (let step ([lhs-e lhs-e]
@@ -338,6 +336,20 @@
             (step (Binop loc name lhs-e rhs-e) depth)]))]
       [_ lhs-e])))
 
+(define (peek-term l)
+  (match (lexer-peek l)
+    [(or (keyword (or 'nil 'false 'function 'true))
+         (number _)
+         (string _)
+         (name _)
+         (dotdotdot)
+         (unop _)
+         (lparen)
+         (lcubrace))
+     #t]
+    [_
+     #f]))
+
 (define (parse-term l)
   (match (lexer-peek l)
     [(keyword 'nil)
@@ -361,7 +373,7 @@
      (define loc (token-loc tok))
      (begin0 (Call loc '#%va-args null)
        (skip l 'dotdotdot))]
-    [(op (and (or 'not '\# '~ '-) id))
+    [(unop id)
      (parse-unary-expr l id)]
     [(keyword 'function)
      (parse-function l)]
