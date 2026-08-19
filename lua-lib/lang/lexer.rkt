@@ -216,7 +216,7 @@
 (define-λcase number-start?
   [(#\.) (number-more? #\.)]
   [(#\0) (λcase
-          [(#\x #\X) (λ (c) (or (hex-digit? c) (error "expected a hex digit")))]
+          [(#\x #\X) hex-start?]
           [(#\.) decimal-digit-or-exponent?])]
   [(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) number-more?])
 
@@ -244,6 +244,27 @@
   [(#\a #\b #\c #\d #\e #\f) hex-digit?]
   [(#\A #\B #\C #\D #\E #\F) hex-digit?]
   [else (and (decimal-digit? c) hex-digit?)])
+
+;; Hex numbers mirror the decimal float path: after 0x/0X the first
+;; character must be a hex digit or a '.', followed by an optional
+;; fractional part and an optional 'p'/'P' binary exponent (the exponent
+;; itself is written in decimal with an optional sign).
+(define-λcase hex-start?
+  #:char-id c
+  [(#\.) hex-fraction?]
+  [else (or (and (hex-digit? c) hex-integer?)
+            (error "expected a hex digit"))])
+
+(define-λcase hex-integer?
+  #:char-id c
+  [(#\.) hex-fraction?]
+  [(#\p #\P) decimal-digit-or-sign?]
+  [else (and (hex-digit? c) hex-integer?)])
+
+(define-λcase hex-fraction?
+  #:char-id c
+  [(#\p #\P) decimal-digit-or-sign?]
+  [else (and (hex-digit? c) hex-fraction?)])
 
 (define-λcase long-brackets-more?
   [(#\[) stop]
@@ -277,11 +298,29 @@
 (define lua:read-op
   (make-reader op-start? string->symbol))
 
+;; Racket's string->number cannot read Lua hex floats (fractional part or
+;; the 'p'/'P' binary exponent), so convert them by hand: a plain hex
+;; integer stays exact, while a hex float becomes (int + frac) * 2^exp.
+(define (lua:number-value s)
+  (cond
+    [(regexp-match #rx"^0[xX]([0-9a-fA-F]*)[.]?([0-9a-fA-F]*)(?:[pP]([-+]?[0-9]+))?$" s)
+     => (λ (m)
+          (match-define (list _ int-part frac-part exp-part) m)
+          (cond
+            [(and (not exp-part) (not (regexp-match? #rx"[.]" s)))
+             (string->number (string-append "#x" int-part) 16)]
+            [else
+             (define int (if (string=? int-part "") 0 (string->number int-part 16)))
+             (define frac
+               (if (string=? frac-part "")
+                   0
+                   (/ (string->number frac-part 16) (expt 16 (string-length frac-part)))))
+             (define exp (if exp-part (string->number exp-part) 0))
+             (exact->inexact (* (+ int frac) (expt 2 exp)))]))]
+    [else (string->number s)]))
+
 (define lua:read-number
-  (make-reader number-start? (λ (s)
-                               (if (regexp-match? #rx"^0[xX]" s)
-                                   (string->number (string-append "#x" (substring s 2)) 16)
-                                   (string->number s)))))
+  (make-reader number-start? lua:number-value))
 
 (define (lua:read-string in [partial? #f])
   (define quote-char (read-char in))

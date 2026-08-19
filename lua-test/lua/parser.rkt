@@ -11,6 +11,9 @@
 (define (parse str)
   (->sexp (parse-chunk (make-lexer (open-input-string str)))))
 
+(define (lex-number str)
+  (token-val (lexer-take (make-lexer (open-input-string str)))))
+
 (define (check-parse* loc str expected)
   (with-check-info*
     (list (make-check-location loc))
@@ -80,7 +83,17 @@
 
     (test-suite
      "number"
-     (check-parse "print(1.)" (Block ((Call (Name print) (1.0))))))
+     (check-parse "print(1.)" (Block ((Call (Name print) (1.0)))))
+     ;; hex integers stay exact (regression)
+     (check-parse "print(0xff)" (Block ((Call (Name print) (255)))))
+     ;; hex floats: optional fractional part and/or 'p'/'P' binary
+     ;; exponent written in decimal (Lua 5.4 Reference Manual 3.1)
+     (check-parse "print(0x.1)" (Block ((Call (Name print) (0.0625)))))
+     (check-parse "print(0x1.8)" (Block ((Call (Name print) (1.5)))))
+     (check-parse "print(0x1p4)" (Block ((Call (Name print) (16.0)))))
+     (check-parse "print(0xA23p-4)" (Block ((Call (Name print) (162.1875)))))
+     ;; 0x1.921FB54442D18p+1 is the IEEE double nearest pi
+     (check-= (lex-number "0X1.921FB54442D18P+1") (* 4 (atan 1)) 1e-10))
 
     (test-suite
      "unary ops"
